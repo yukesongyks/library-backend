@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.library.dao.mapper.BorrowRecordMapper">
+
+    <resultMap id="BorrowRecordResultMap" type="com.library.model.entity.BorrowRecordDO">
+        <id property="id" column="id"/>
+        <result property="bookId" column="book_id"/>
+        <result property="readerId" column="reader_id"/>
+        <result property="borrowTime" column="borrow_time"/>
+        <result property="dueTime" column="due_time"/>
+        <result property="returnTime" column="return_time"/>
+        <result property="status" column="status"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <!-- 联表结果Map: 扩展图书/读者冗余字段 -->
+    <resultMap id="BorrowJoinResultMap" type="com.library.model.entity.BorrowRecordDO">
+        <id property="id" column="id"/>
+        <result property="bookId" column="book_id"/>
+        <result property="readerId" column="reader_id"/>
+        <result property="borrowTime" column="borrow_time"/>
+        <result property="dueTime" column="due_time"/>
+        <result property="returnTime" column="return_time"/>
+        <result property="status" column="status"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="bookTitle" column="book_title"/>
+        <result property="bookIsbn" column="book_isbn"/>
+        <result property="readerName" column="reader_name"/>
+        <result property="borrowCount" column="borrow_cnt"/>
+    </resultMap>
+
+    <sql id="borrowColumns">
+        id, book_id, reader_id, borrow_time, due_time, return_time, status, create_time, update_time
+    </sql>
+
+    <insert id="insert" parameterType="com.library.model.entity.BorrowRecordDO" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO borrow_record (book_id, reader_id, borrow_time, due_time, status)
+        VALUES (#{bookId}, #{readerId}, #{borrowTime}, #{dueTime}, #{status})
+    </insert>
+
+    <update id="updateReturn">
+        UPDATE borrow_record
+        SET return_time = #{returnTime},
+            status = #{status},
+            update_time = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateOverdueStatus">
+        UPDATE borrow_record
+        SET status = #{status},
+            update_time = CURRENT_TIMESTAMP
+        WHERE status = #{oldStatus}
+          AND due_time &lt; #{now}
+          AND return_time IS NULL
+    </update>
+
+    <select id="selectById" resultMap="BorrowRecordResultMap">
+        SELECT <include refid="borrowColumns"/>
+        FROM borrow_record
+        WHERE id = #{id}
+    </select>
+
+    <select id="countUnreturned" resultType="int">
+        SELECT COUNT(1)
+        FROM borrow_record
+        WHERE reader_id = #{readerId}
+          AND status IN ('BORROWED', 'OVERDUE')
+    </select>
+
+    <select id="countActiveBorrow" resultType="int">
+        SELECT COUNT(1)
+        FROM borrow_record
+        WHERE reader_id = #{readerId}
+          AND book_id = #{bookId}
+          AND status IN ('BORROWED', 'OVERDUE')
+    </select>
+
+    <select id="countByReader" resultType="long">
+        SELECT COUNT(1)
+        FROM borrow_record
+        WHERE reader_id = #{readerId}
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+    </select>
+
+    <select id="selectPageByReader" resultMap="BorrowJoinResultMap">
+        SELECT br.id, br.book_id, br.reader_id, br.borrow_time, br.due_time,
+               br.return_time, br.status, br.create_time, br.update_time,
+               b.title AS book_title, b.isbn AS book_isbn,
+               r.name AS reader_name
+        FROM borrow_record br
+        LEFT JOIN book b ON br.book_id = b.id
+        LEFT JOIN reader r ON br.reader_id = r.id
+        WHERE br.reader_id = #{readerId}
+        <if test="status != null and status != ''">
+            AND br.status = #{status}
+        </if>
+        ORDER BY br.id DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <select id="selectOverduePage" resultMap="BorrowJoinResultMap">
+        SELECT br.id, br.book_id, br.reader_id, br.borrow_time, br.due_time,
+               br.return_time, br.status, br.create_time, br.update_time,
+               b.title AS book_title, b.isbn AS book_isbn,
+               r.name AS reader_name
+        FROM borrow_record br
+        LEFT JOIN book b ON br.book_id = b.id
+        LEFT JOIN reader r ON br.reader_id = r.id
+        WHERE br.status IN ('OVERDUE', 'BORROWED')
+          AND br.due_time &lt; CURRENT_TIMESTAMP
+          AND br.return_time IS NULL
+        ORDER BY br.due_time ASC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <select id="countOverdue" resultType="long">
+        SELECT COUNT(1)
+        FROM borrow_record
+        WHERE status IN ('OVERDUE', 'BORROWED')
+          AND due_time &lt; CURRENT_TIMESTAMP
+          AND return_time IS NULL
+    </select>
+
+    <select id="countBorrowing" resultType="long">
+        SELECT COUNT(1)
+        FROM borrow_record
+        WHERE status IN ('BORROWED', 'OVERDUE')
+    </select>
+
+    <select id="selectPopularBooks" resultMap="BorrowJoinResultMap">
+        SELECT br.book_id, b.title AS book_title, b.isbn AS book_isbn,
+               COUNT(br.id) AS borrow_cnt
+        FROM borrow_record br
+        LEFT JOIN book b ON br.book_id = b.id
+        GROUP BY br.book_id, b.title, b.isbn
+        ORDER BY borrow_cnt DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.library.dao.mapper.BookMapper">
+
+    <resultMap id="BookResultMap" type="com.library.model.entity.BookDO">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="author" column="author"/>
+        <result property="isbn" column="isbn"/>
+        <result property="category" column="category"/>
+        <result property="stock" column="stock"/>
+        <result property="totalStock" column="total_stock"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="bookColumns">
+        id, title, author, isbn, category, stock, total_stock, create_time, update_time
+    </sql>
+
+    <insert id="insert" parameterType="com.library.model.entity.BookDO" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO book (title, author, isbn, category, stock, total_stock)
+        VALUES (#{title}, #{author}, #{isbn}, #{category}, #{stock}, #{stock})
+    </insert>
+
+    <update id="update" parameterType="com.library.model.entity.BookDO">
+        UPDATE book
+        <set>
+            <if test="title != null and title != ''">title = #{title},</if>
+            <if test="author != null and author != ''">author = #{author},</if>
+            <if test="isbn != null and isbn != ''">isbn = #{isbn},</if>
+            <if test="category != null and category != ''">category = #{category},</if>
+            <if test="stock != null">stock = #{stock},</if>
+            <if test="totalStock != null">total_stock = #{totalStock},</if>
+            update_time = CURRENT_TIMESTAMP
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM book WHERE id = #{id}
+    </delete>
+
+    <select id="selectById" resultMap="BookResultMap">
+        SELECT <include refid="bookColumns"/>
+        FROM book
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByIsbn" resultMap="BookResultMap">
+        SELECT <include refid="bookColumns"/>
+        FROM book
+        WHERE isbn = #{isbn}
+    </select>
+
+    <select id="selectCount" resultType="long">
+        SELECT COUNT(1)
+        FROM book
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (title LIKE CONCAT('%', #{keyword}, '%')
+                  OR author LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="category != null and category != ''">
+                AND category = #{category}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectPage" resultMap="BookResultMap">
+        SELECT <include refid="bookColumns"/>
+        FROM book
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (title LIKE CONCAT('%', #{keyword}, '%')
+                  OR author LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="category != null and category != ''">
+                AND category = #{category}
+            </if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <select id="selectAll" resultMap="BookResultMap">
+        SELECT <include refid="bookColumns"/>
+        FROM book
+        ORDER BY id ASC
+    </select>
+
+    <!-- 扣减库存: 仅当库存 >= count 时才更新成功 -->
+    <update id="deductStock">
+        UPDATE book
+        SET stock = stock - #{count},
+            update_time = CURRENT_TIMESTAMP
+        WHERE id = #{bookId} AND stock >= #{count}
+    </update>
+
+    <!-- 恢复库存: 不超过总库存 -->
+    <update id="restoreStock">
+        UPDATE book
+        SET stock = LEAST(stock + #{count}, total_stock),
+            update_time = CURRENT_TIMESTAMP
+        WHERE id = #{bookId}
+    </update>
+
+</mapper>

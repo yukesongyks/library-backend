@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.library.dao.mapper.ReaderMapper">
+
+    <resultMap id="ReaderResultMap" type="com.library.model.entity.ReaderDO">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="phone" column="phone"/>
+        <result property="email" column="email"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="readerColumns">
+        id, name, phone, email, create_time, update_time
+    </sql>
+
+    <insert id="insert" parameterType="com.library.model.entity.ReaderDO" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO reader (name, phone, email)
+        VALUES (#{name}, #{phone}, #{email})
+    </insert>
+
+    <update id="update" parameterType="com.library.model.entity.ReaderDO">
+        UPDATE reader
+        <set>
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="phone != null and phone != ''">phone = #{phone},</if>
+            <if test="email != null">email = #{email},</if>
+            update_time = CURRENT_TIMESTAMP
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM reader WHERE id = #{id}
+    </delete>
+
+    <select id="selectById" resultMap="ReaderResultMap">
+        SELECT <include refid="readerColumns"/>
+        FROM reader
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectCount" resultType="long">
+        SELECT COUNT(1)
+        FROM reader
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (name LIKE CONCAT('%', #{keyword}, '%')
+                  OR phone LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </select>
+
+    <select id="selectPage" resultMap="ReaderResultMap">
+        SELECT <include refid="readerColumns"/>
+        FROM reader
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (name LIKE CONCAT('%', #{keyword}, '%')
+                  OR phone LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <select id="selectAll" resultMap="ReaderResultMap">
+        SELECT <include refid="readerColumns"/>
+        FROM reader
+        ORDER BY id ASC
+    </select>
+
+</mapper>
