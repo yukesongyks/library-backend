@@ -26,15 +26,16 @@
           AND status IN ('BORROWING', 'OVERDUE')
     </update>
 
-    <!-- 统计在借中数量 -->
+    <!-- 统计在借中数量（FOR UPDATE 加锁防并发超借） -->
     <select id="countBorrowing" resultType="int">
         SELECT COUNT(*)
         FROM borrow_record
         WHERE user_id = #{userId}
           AND status = 'BORROWING'
+        FOR UPDATE
     </select>
 
-    <!-- 统计逾期数量（状态=OVERDUE 或 BORROWING 且已过期） -->
+    <!-- 统计逾期数量（状态=OVERDUE 或 BORROWING 且已过期，FOR UPDATE 加锁） -->
     <select id="countOverdue" resultType="int">
         SELECT COUNT(*)
         FROM borrow_record
@@ -43,6 +44,7 @@
               status = 'OVERDUE'
               OR (status = 'BORROWING' AND due_date &lt; NOW())
           )
+        FOR UPDATE
     </select>
 
     <!-- 分页查询读者借阅记录 -->

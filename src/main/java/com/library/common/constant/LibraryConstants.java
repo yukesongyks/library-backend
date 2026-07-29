@@ -19,6 +19,9 @@ public final class LibraryConstants {
     /** JWT Token 过期小时数 */
     public static final int JWT_EXPIRE_HOURS = 24;
 
+    /** 系统时区 */
+    public static final String SYSTEM_TIMEZONE = "Asia/Shanghai";
+
     /** 请求头 Authorization */
     public static final String HEADER_AUTHORIZATION = "Authorization";
 
@@ -45,6 +48,12 @@ public final class LibraryConstants {
 
     /** 借阅状态 - 已逾期 */
     public static final String STATUS_OVERDUE = "OVERDUE";
+
+    /** 用户状态 - 活跃 */
+    public static final String STATUS_ACTIVE = "ACTIVE";
+
+    /** 用户状态 - 冻结 */
+    public static final String STATUS_FROZEN = "FROZEN";
 
     /** 逻辑删除 - 未删除 */
     public static final int NOT_DELETED = 0;

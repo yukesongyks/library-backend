@@ -24,11 +24,12 @@
           AND stock >= #{qty}
     </update>
 
-    <!-- 恢复库存 -->
+    <!-- 恢复库存（幂等：仅未删除的图书可恢复） -->
     <update id="restoreStock">
         UPDATE book
         SET stock = stock + #{qty}
         WHERE id = #{bookId}
+          AND is_deleted = 0
     </update>
 
     <!-- 读者搜索图书 -->

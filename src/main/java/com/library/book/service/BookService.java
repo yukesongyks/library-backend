@@ -9,7 +9,9 @@ import com.library.book.dto.CategoryCreateRequest;
 import com.library.book.dto.CategoryVO;
 import com.library.book.entity.BookDO;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 图书管理服务接口。
@@ -100,6 +102,14 @@ public interface BookService {
      * @return 分类列表
      */
     List<CategoryVO> listCategories();
+
+    /**
+     * 批量获取图书ID到书名的映射。
+     *
+     * @param bookIds 图书ID集合
+     * @return ID → 书名映射
+     */
+    Map<Long, String> getBookTitleMap(Collection<Long> bookIds);
 
     /**
      * 校验分类是否存在。

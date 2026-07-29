@@ -5,6 +5,7 @@ import com.library.auth.dto.LoginResult;
 import com.library.auth.entity.SysUserDO;
 import com.library.auth.mapper.SysUserMapper;
 import com.library.auth.service.AuthService;
+import com.library.common.constant.LibraryConstants;
 import com.library.common.exception.BizException;
 import com.library.common.exception.ErrorCode;
 import com.library.common.jwt.JwtUtil;
@@ -42,7 +43,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // R05: 账号状态为ACTIVE
-        if (!"ACTIVE".equals(user.getStatus())) {
+        if (!LibraryConstants.STATUS_ACTIVE.equals(user.getStatus())) {
             throw new BizException(ErrorCode.AUTH_002);
         }
 
@@ -59,7 +60,7 @@ public class AuthServiceImpl implements AuthService {
         user.setUsername(username);
         user.setPassword(passwordEncoder.encode(password));
         user.setRole(role);
-        user.setStatus("ACTIVE");
+        user.setStatus(LibraryConstants.STATUS_ACTIVE);
         sysUserMapper.insert(user);
         return user.getId();
     }

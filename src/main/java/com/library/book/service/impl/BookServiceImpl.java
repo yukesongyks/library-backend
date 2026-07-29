@@ -20,7 +20,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 图书管理服务实现。
@@ -38,7 +43,7 @@ public class BookServiceImpl implements BookService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createBook(BookCreateRequest req) {
-        // R01: ISBN全局唯一
+        // R01: ISBN全局唯一（依赖数据库唯一约束兜底）
         LambdaQueryWrapper<BookDO> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(BookDO::getIsbn, req.getIsbn());
         Long count = bookMapper.selectCount(wrapper);
@@ -57,12 +62,18 @@ public class BookServiceImpl implements BookService {
         book.setIsbn(req.getIsbn());
         book.setCategoryId(req.getCategoryId());
         book.setStock(req.getStock());
-        bookMapper.insert(book);
+        try {
+            bookMapper.insert(book);
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            // 并发场景下唯一约束兜底，转为业务异常
+            throw new BizException(ErrorCode.BOOK_001);
+        }
         log.info("新增图书成功: id={}, isbn={}", book.getId(), book.getIsbn());
         return book.getId();
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteBook(Long id) {
         BookDO book = bookMapper.selectById(id);
         if (book == null) {
@@ -142,6 +153,7 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Long createCategory(CategoryCreateRequest req) {
         LambdaQueryWrapper<BookCategoryDO> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(BookCategoryDO::getName, req.getName());
@@ -151,7 +163,12 @@ public class BookServiceImpl implements BookService {
         }
         BookCategoryDO category = new BookCategoryDO();
         category.setName(req.getName());
-        bookCategoryMapper.insert(category);
+        try {
+            bookCategoryMapper.insert(category);
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            // 并发场景下唯一约束兜底，转为业务异常
+            throw new BizException(ErrorCode.BOOK_002);
+        }
         log.info("新增分类成功: id={}, name={}", category.getId(), category.getName());
         return category.getId();
     }
@@ -172,6 +189,19 @@ public class BookServiceImpl implements BookService {
         return bookCategoryMapper.selectById(categoryId) != null;
     }
 
+    @Override
+    public Map<Long, String> getBookTitleMap(Collection<Long> bookIds) {
+        if (bookIds == null || bookIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        LambdaQueryWrapper<BookDO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(BookDO::getId, bookIds);
+        wrapper.select(BookDO::getId, BookDO::getTitle);
+        List<BookDO> books = bookMapper.selectList(wrapper);
+        return books.stream()
+                .collect(Collectors.toMap(BookDO::getId, BookDO::getTitle));
+    }
+
     /**
      * DO 转 VO。
      */
@@ -183,6 +213,7 @@ public class BookServiceImpl implements BookService {
         vo.setIsbn(book.getIsbn());
         vo.setCategoryId(book.getCategoryId());
         vo.setStock(book.getStock());
+        // 填充分类名
         if (book.getCategoryId() != null) {
             BookCategoryDO category = bookCategoryMapper.selectById(book.getCategoryId());
             if (category != null) {

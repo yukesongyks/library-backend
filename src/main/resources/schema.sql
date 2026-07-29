@@ -98,8 +98,9 @@ CREATE TABLE `borrow_record` (
 -- ----------------------------
 -- 初始化数据: 管理员账号 + 默认分类
 -- ----------------------------
+-- 初始管理员账号: admin01 / admin123 (仅开发环境，生产环境请通过接口创建)
 INSERT INTO `sys_user` (`username`, `password`, `role`, `status`) VALUES
-('admin01', '$2a$10$N.ZOn9G6/Ylfav6KB8qnH.5B5O5VH3Dn6lKj5oFk5n5o5o5o5o5o', 'ADMIN', 'ACTIVE');
+('admin01', '$2b$10$XUXJGYWU6bIfy2Lq1esAJuEseHsc8V.RZRAMwp5.HWm.s3Ugs/x4y', 'ADMIN', 'ACTIVE');
 
 INSERT INTO `book_category` (`name`) VALUES
 ('计算机'),

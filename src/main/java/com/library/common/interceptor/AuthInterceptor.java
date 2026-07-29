@@ -87,7 +87,9 @@ public class AuthInterceptor implements HandlerInterceptor {
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         try {
-            response.getWriter().write(objectMapper.writeValueAsString(Result.fail(errorCode.getCode(), errorCode.getMsg())));
+            String json = objectMapper.writeValueAsString(
+                    Result.fail(errorCode.getCode(), errorCode.getMsg()));
+            response.getWriter().write(json);
         } catch (Exception e) {
             log.error("写入拦截器失败响应异常", e);
         }

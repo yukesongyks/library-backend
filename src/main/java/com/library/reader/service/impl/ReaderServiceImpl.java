@@ -58,6 +58,7 @@ public class ReaderServiceImpl implements ReaderService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteReader(Long id) {
         ReaderDO reader = readerMapper.selectById(id);
         if (reader == null) {

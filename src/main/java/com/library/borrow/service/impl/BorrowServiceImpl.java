@@ -23,7 +23,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.time.ZoneId;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 借阅管理服务实现。
@@ -72,7 +75,7 @@ public class BorrowServiceImpl implements BorrowService {
         }
 
         // 生成借阅记录
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of(LibraryConstants.SYSTEM_TIMEZONE));
         LocalDateTime dueDate = now.plusDays(borrowPeriodDays);
 
         BorrowRecordDO record = new BorrowRecordDO();
@@ -99,9 +102,10 @@ public class BorrowServiceImpl implements BorrowService {
 
         // R02: 记录归属当前登录读者（水平权限校验）
         // R03: 状态为BORROWING或OVERDUE（幂等：条件更新，影响行数=0则无权或状态不符）
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of(LibraryConstants.SYSTEM_TIMEZONE));
         boolean isOverdue = now.isAfter(record.getDueDate());
-        String newStatus = isOverdue ? LibraryConstants.STATUS_OVERDUE : LibraryConstants.STATUS_RETURNED;
+        // 归还始终设为 RETURNED，逾期信息通过 ReturnResult 返回
+        String newStatus = LibraryConstants.STATUS_RETURNED;
 
         int rows = borrowRecordMapper.updateReturn(req.getRecordId(), userId, newStatus, now);
         if (rows == 0) {
@@ -119,9 +123,6 @@ public class BorrowServiceImpl implements BorrowService {
         int overdueDays = 0;
         if (isOverdue) {
             overdueDays = (int) Duration.between(record.getDueDate(), now).toDays();
-            if (overdueDays < 0) {
-                overdueDays = 0;
-            }
         }
 
         log.info("归还成功: recordId={}, userId={}, isOverdue={}, overdueDays={}",
@@ -139,7 +140,14 @@ public class BorrowServiceImpl implements BorrowService {
         }
         Page<BorrowRecordDO> page = new Page<>(pageNum, pageSize);
         IPage<BorrowRecordDO> recordPage = borrowRecordMapper.selectByUserId(page, userId, status);
-        return recordPage.convert(this::toBorrowRecordVO);
+        // 批量获取书名，避免 N+1 查询
+        Set<Long> bookIds = recordPage.getRecords().stream()
+                .map(BorrowRecordDO::getBookId)
+                .collect(Collectors.toSet());
+        Map<Long, String> titleMap = bookIds.isEmpty()
+                ? Map.of()
+                : bookService.getBookTitleMap(bookIds);
+        return recordPage.convert(r -> toBorrowRecordVO(r, titleMap));
     }
 
     @Override
@@ -149,21 +157,18 @@ public class BorrowServiceImpl implements BorrowService {
             throw new BizException(ErrorCode.BORROW_005);
         }
         return LibraryConstants.STATUS_BORROWING.equals(record.getStatus())
-                && LocalDateTime.now().isAfter(record.getDueDate());
+                && LocalDateTime.now(ZoneId.of(LibraryConstants.SYSTEM_TIMEZONE))
+                        .isAfter(record.getDueDate());
     }
 
     /**
      * DO 转 VO。
      */
-    private BorrowRecordVO toBorrowRecordVO(BorrowRecordDO record) {
+    private BorrowRecordVO toBorrowRecordVO(BorrowRecordDO record, Map<Long, String> titleMap) {
         BorrowRecordVO vo = new BorrowRecordVO();
         vo.setId(record.getId());
         vo.setBookId(record.getBookId());
-        // 填充书名
-        BookDO book = bookService.getBookById(record.getBookId());
-        if (book != null) {
-            vo.setBookTitle(book.getTitle());
-        }
+        vo.setBookTitle(titleMap.get(record.getBookId()));
         vo.setBorrowDate(record.getBorrowDate());
         vo.setDueDate(record.getDueDate());
         vo.setReturnDate(record.getReturnDate());
