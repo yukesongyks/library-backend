@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.library.borrow.mapper.BorrowRecordMapper">
+
+    <resultMap id="borrowRecordMap" type="com.library.borrow.entity.BorrowRecordDO">
+        <id property="id" column="id"/>
+        <result property="bookId" column="book_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="borrowDate" column="borrow_date"/>
+        <result property="dueDate" column="due_date"/>
+        <result property="returnDate" column="return_date"/>
+        <result property="status" column="status"/>
+        <result property="gmtCreate" column="gmt_create"/>
+        <result property="gmtModified" column="gmt_modified"/>
+    </resultMap>
+
+    <!-- 条件更新归还（幂等：仅 BORROWING/OVERDUE 可更新） -->
+    <update id="updateReturn">
+        UPDATE borrow_record
+        SET status = #{status},
+            return_date = #{returnDate},
+            gmt_modified = NOW()
+        WHERE id = #{recordId}
+          AND user_id = #{userId}
+          AND status IN ('BORROWING', 'OVERDUE')
+    </update>
+
+    <!-- 统计在借中数量（FOR UPDATE 加锁防并发超借） -->
+    <select id="countBorrowing" resultType="int">
+        SELECT COUNT(*)
+        FROM borrow_record
+        WHERE user_id = #{userId}
+          AND status = 'BORROWING'
+        FOR UPDATE
+    </select>
+
+    <!-- 统计逾期数量（状态=OVERDUE 或 BORROWING 且已过期，FOR UPDATE 加锁） -->
+    <select id="countOverdue" resultType="int">
+        SELECT COUNT(*)
+        FROM borrow_record
+        WHERE user_id = #{userId}
+          AND (
+              status = 'OVERDUE'
+              OR (status = 'BORROWING' AND due_date &lt; NOW())
+          )
+        FOR UPDATE
+    </select>
+
+    <!-- 分页查询读者借阅记录 -->
+    <select id="selectByUserId" resultMap="borrowRecordMap">
+        SELECT id, book_id, user_id, borrow_date, due_date, return_date, status, gmt_create, gmt_modified
+        FROM borrow_record
+        WHERE user_id = #{userId}
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        ORDER BY gmt_create DESC
+    </select>
+
+</mapper>

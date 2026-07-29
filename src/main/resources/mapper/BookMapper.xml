@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.library.book.mapper.BookMapper">
+
+    <resultMap id="bookMap" type="com.library.book.entity.BookDO">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="author" column="author"/>
+        <result property="isbn" column="isbn"/>
+        <result property="categoryId" column="category_id"/>
+        <result property="stock" column="stock"/>
+        <result property="deleted" column="is_deleted"/>
+        <result property="gmtCreate" column="gmt_create"/>
+        <result property="gmtModified" column="gmt_modified"/>
+    </resultMap>
+
+    <!-- 扣减库存（行级锁防超卖） -->
+    <update id="deductStock">
+        UPDATE book
+        SET stock = stock - #{qty}
+        WHERE id = #{bookId}
+          AND is_deleted = 0
+          AND stock >= #{qty}
+    </update>
+
+    <!-- 恢复库存（幂等：仅未删除的图书可恢复） -->
+    <update id="restoreStock">
+        UPDATE book
+        SET stock = stock + #{qty}
+        WHERE id = #{bookId}
+          AND is_deleted = 0
+    </update>
+
+    <!-- 读者搜索图书 -->
+    <select id="searchBooks" resultMap="bookMap">
+        SELECT id, title, author, isbn, category_id, stock, is_deleted, gmt_create, gmt_modified
+        FROM book
+        WHERE is_deleted = 0
+        <if test="keyword != null and keyword != ''">
+            AND (title LIKE CONCAT('%', #{keyword}, '%') OR author LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="categoryId != null">
+            AND category_id = #{categoryId}
+        </if>
+        ORDER BY gmt_create DESC
+    </select>
+
+</mapper>

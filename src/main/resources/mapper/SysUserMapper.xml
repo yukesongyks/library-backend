@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.library.auth.mapper.SysUserMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="sysUserMap" type="com.library.auth.entity.SysUserDO">
+        <id property="id" column="id"/>
+        <result property="username" column="username"/>
+        <result property="password" column="password"/>
+        <result property="role" column="role"/>
+        <result property="status" column="status"/>
+        <result property="gmtCreate" column="gmt_create"/>
+        <result property="gmtModified" column="gmt_modified"/>
+    </resultMap>
+
+    <!-- 根据用户名查询 -->
+    <select id="selectByUsername" resultMap="sysUserMap">
+        SELECT id, username, password, role, status, gmt_create, gmt_modified
+        FROM sys_user
+        WHERE username = #{username}
+    </select>
+
+</mapper>
