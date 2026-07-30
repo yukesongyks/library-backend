@@ -1,0 +1,26 @@
+# OpenSpec configuration for library-backend
+# Manually initialized (openspec CLI unavailable); equivalent to `openspec init`.
+
+schema: openspec.config.v1
+project:
+  name: library-management-system
+  description: 图书管理系统（前后端分离）
+  language: java        # 待澄清：后端技术栈暂定 Java/Spring Boot
+  framework: spring-boot # 待澄清
+  database: relational    # 待澄清：暂定关系型数据库
+
+rules:
+  spec:
+    require_scenario_examples: true
+    require_testable_requirements: true
+  proposal:
+    require_why: true
+    require_impact: true
+  tasks:
+    require_estimation: false
+
+context:
+  cross_repo: true
+  primary_repo: library-backend
+  consumer_repos:
+    - library-frontend
