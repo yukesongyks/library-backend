@@ -1,0 +1,11 @@
+project:
+  name: library-backend
+  description: 图书管理系统后端服务
+context:
+  language: zh-CN
+  spec_format: openspec
+rules:
+  proposal: required
+  specs: required
+  design: required_when_architecture_or_api_or_data_model_changes
+  tasks: required
