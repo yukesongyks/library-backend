@@ -92,6 +92,8 @@ public class CallLogAspect {
 }
 ```
 
+> **一致性补充（实现期更新）**：spec `tracking-analytics.md` 场景"接口异常时埋点记录错误状态"要求方法抛异常时同样写入 CallLog（responseStatus=ERROR，requestSummary 记录请求参数）。`@AfterReturning` 仅在成功返回时触发，无法覆盖异常路径。为实现与 spec 完全对齐，`CallLogAspect` 实际实现补充了 `@AfterThrowing` 切面拦截异常路径，写 responseStatus=ERROR。异常仍继续向外抛（由 GlobalExceptionHandler 转 400/500），切面仅旁路记录。此属意图不变的一致性更新，不改变 design 主体决策。
+
 ## 异常兜底设计
 
 ### 全局异常处理器
