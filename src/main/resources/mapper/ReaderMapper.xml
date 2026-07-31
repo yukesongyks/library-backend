@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.antgroup.library.reader.mapper.ReaderMapper">
+
+    <resultMap id="readerResultMap" type="com.antgroup.library.reader.entity.Reader">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="phone" column="phone"/>
+        <result property="readerType" column="reader_type"/>
+        <result property="status" column="status"/>
+        <result property="isDeleted" column="is_deleted"/>
+        <result property="gmtCreate" column="gmt_create"/>
+        <result property="gmtModified" column="gmt_modified"/>
+    </resultMap>
+
+    <sql id="baseColumns">
+        id, name, phone, reader_type, status, is_deleted, gmt_create, gmt_modified
+    </sql>
+
+    <select id="selectById" resultMap="readerResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM reader
+        WHERE id = #{id} AND is_deleted = 0
+    </select>
+
+    <select id="selectByPhone" resultMap="readerResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM reader
+        WHERE phone = #{phone} AND is_deleted = 0
+    </select>
+
+    <select id="selectPage" resultMap="readerResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM reader
+        WHERE is_deleted = 0
+        <if test="name != null and name != ''">
+            AND name LIKE CONCAT('%', #{name}, '%')
+        </if>
+        <if test="phone != null and phone != ''">
+            AND phone LIKE CONCAT('%', #{phone}, '%')
+        </if>
+        ORDER BY gmt_modified DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <select id="selectCount" resultType="long">
+        SELECT COUNT(1)
+        FROM reader
+        WHERE is_deleted = 0
+        <if test="name != null and name != ''">
+            AND name LIKE CONCAT('%', #{name}, '%')
+        </if>
+        <if test="phone != null and phone != ''">
+            AND phone LIKE CONCAT('%', #{phone}, '%')
+        </if>
+    </select>
+
+    <insert id="insert" parameterType="com.antgroup.library.reader.entity.Reader" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO reader (name, phone, reader_type, status, is_deleted)
+        VALUES (#{name}, #{phone}, #{readerType}, #{status}, 0)
+    </insert>
+
+    <update id="update" parameterType="com.antgroup.library.reader.entity.Reader">
+        UPDATE reader
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="readerType != null">reader_type = #{readerType},</if>
+            <if test="status != null">status = #{status},</if>
+            gmt_modified = CURRENT_TIMESTAMP
+        </set>
+        WHERE id = #{id} AND is_deleted = 0
+    </update>
+
+    <update id="logicDelete">
+        UPDATE reader SET is_deleted = 1, gmt_modified = CURRENT_TIMESTAMP
+        WHERE id = #{id} AND is_deleted = 0
+    </update>
+
+</mapper>

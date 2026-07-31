@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.antgroup.library.borrow.mapper.BorrowRecordMapper">
+
+    <resultMap id="borrowRecordResultMap" type="com.antgroup.library.borrow.entity.BorrowRecord">
+        <id property="id" column="id"/>
+        <result property="bookId" column="book_id"/>
+        <result property="readerId" column="reader_id"/>
+        <result property="borrowTime" column="borrow_time"/>
+        <result property="dueTime" column="due_time"/>
+        <result property="returnTime" column="return_time"/>
+        <result property="status" column="status"/>
+        <result property="isOverdue" column="is_overdue"/>
+        <result property="isDeleted" column="is_deleted"/>
+        <result property="gmtCreate" column="gmt_create"/>
+        <result property="gmtModified" column="gmt_modified"/>
+    </resultMap>
+
+    <resultMap id="borrowRecordVOResultMap" type="com.antgroup.library.borrow.dto.BorrowRecordVO">
+        <id property="id" column="id"/>
+        <result property="bookId" column="book_id"/>
+        <result property="bookTitle" column="book_title"/>
+        <result property="readerId" column="reader_id"/>
+        <result property="readerName" column="reader_name"/>
+        <result property="borrowTime" column="borrow_time"/>
+        <result property="dueTime" column="due_time"/>
+        <result property="returnTime" column="return_time"/>
+        <result property="status" column="status"/>
+        <result property="isOverdue" column="is_overdue"/>
+    </resultMap>
+
+    <select id="selectById" resultMap="borrowRecordResultMap">
+        SELECT id, book_id, reader_id, borrow_time, due_time, return_time, status, is_overdue,
+               is_deleted, gmt_create, gmt_modified
+        FROM borrow_record
+        WHERE id = #{id} AND is_deleted = 0
+    </select>
+
+    <select id="countUnreturnedByReader" resultType="int">
+        SELECT COUNT(1)
+        FROM borrow_record
+        WHERE reader_id = #{readerId} AND is_deleted = 0
+          AND status IN ('BORROWING', 'OVERDUE')
+    </select>
+
+    <select id="countUnreturnedByBook" resultType="int">
+        SELECT COUNT(1)
+        FROM borrow_record
+        WHERE book_id = #{bookId} AND is_deleted = 0
+          AND status IN ('BORROWING', 'OVERDUE')
+    </select>
+
+    <select id="countActiveBorrowByReaderAndBook" resultType="int">
+        SELECT COUNT(1)
+        FROM borrow_record
+        WHERE reader_id = #{readerId} AND book_id = #{bookId} AND is_deleted = 0
+          AND status IN ('BORROWING', 'OVERDUE')
+    </select>
+
+    <select id="selectPage" resultMap="borrowRecordVOResultMap">
+        SELECT br.id, br.book_id, br.reader_id, br.borrow_time, br.due_time, br.return_time,
+               br.status, br.is_overdue,
+               b.title AS book_title,
+               r.name AS reader_name
+        FROM borrow_record br
+        INNER JOIN book b ON br.book_id = b.id
+        INNER JOIN reader r ON br.reader_id = r.id
+        WHERE br.is_deleted = 0
+        <if test="readerId != null">
+            AND br.reader_id = #{readerId}
+        </if>
+        <if test="bookId != null">
+            AND br.book_id = #{bookId}
+        </if>
+        <if test="status != null and status != ''">
+            AND br.status = #{status}
+        </if>
+        ORDER BY br.gmt_modified DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <select id="selectCount" resultType="long">
+        SELECT COUNT(1)
+        FROM borrow_record br
+        WHERE br.is_deleted = 0
+        <if test="readerId != null">
+            AND br.reader_id = #{readerId}
+        </if>
+        <if test="bookId != null">
+            AND br.book_id = #{bookId}
+        </if>
+        <if test="status != null and status != ''">
+            AND br.status = #{status}
+        </if>
+    </select>
+
+    <insert id="insert" parameterType="com.antgroup.library.borrow.entity.BorrowRecord"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO borrow_record (book_id, reader_id, borrow_time, due_time, return_time,
+                                   status, is_overdue, is_deleted)
+        VALUES (#{bookId}, #{readerId}, #{borrowTime}, #{dueTime}, #{returnTime},
+                #{status}, #{isOverdue}, 0)
+    </insert>
+
+    <update id="updateToReturned">
+        UPDATE borrow_record
+        SET status = 'RETURNED',
+            return_time = #{returnTime},
+            is_overdue = #{isOverdue},
+            gmt_modified = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+          AND is_deleted = 0
+          AND status IN ('BORROWING', 'OVERDUE')
+    </update>
+
+</mapper>
