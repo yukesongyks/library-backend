@@ -1828,3 +1828,63 @@ cd library-frontend
 git add -A
 git commit -m "feat: add cost analysis dashboard, analysis page, project cost page with ECharts and export"
 ```
+
+---
+
+## Self-Review
+
+### 1. Spec coverage（需求覆盖检查）
+
+| 需求项 | 覆盖 Task | 状态 |
+|--------|----------|------|
+| 统计企业各项成本支出 | Task 3-5（数据模型+聚合查询+API） | ✅ |
+| 前端新建成本统计分析页面 | Task 7（CostAnalysis.tsx） | ✅ |
+| 前端 Dashboard | Task 7（Dashboard.tsx） | ✅ |
+| 按部门维度展示 | Task 3-4（findCostByDepartment）+ Task 7 | ✅ |
+| 按项目维度展示 | Task 4（getProjectCost）+ Task 7（ProjectCost.tsx） | ✅ |
+| 按业务线维度展示 | Task 3-4（CostRecord.businessLine 关联）+ Task 4 getCostByDimension | ✅ |
+| 按人员维度展示 | Task 4（findByFilters 支持 employeeId） | ✅ |
+| 按月份维度展示 | Task 4（findMonthlyTrend）+ Task 7 | ✅ |
+| 按季度维度展示 | Task 2-3（costYear + costMonth 可推导季度）+ Task 4 getCostByDimension | ✅ |
+| 按年度维度展示 | Task 4（findTotalCostByYear + getCostByDimension year 参数） | ✅ |
+| 人力成本（开发/测试/产品/运维） | Task 2（EmployeeRole 枚举）+ Task 4（getCostByRole）+ Task 7（RoleCostPie） | ✅ |
+| 项目成本-项目预算 | Task 2（ProjectBudget 实体）+ Task 4（getProjectCost） | ✅ |
+| 项目成本-实际消耗 | Task 4（CostRecord 聚合到 Project） | ✅ |
+| 项目成本-预算占比 | Task 4（ProjectCostDTO.calculateDerived → budgetUsageRate） | ✅ |
+| 项目成本-预计超支金额 | Task 4（ProjectCostDTO.calculateDerived → overspendAmount） | ✅ |
+| 支持报表导出 | Task 5（ExcelExportService + /api/cost/export）+ Task 7（导出按钮） | ✅ |
+
+无遗漏需求项。
+
+### 2. Placeholder scan（占位符扫描）
+
+扫描全文无 TBD/TODO/"implement later"/"fill in details"/"add appropriate error handling"/"Similar to Task N" 等占位符。所有步骤均含完整代码块。✅
+
+### 3. Type consistency（类型一致性检查）
+
+| 符号 | 定义位置 | 引用位置 | 一致性 |
+|------|----------|----------|--------|
+| `Employee.EmployeeRole` 枚举 | Task 2 Employee.java | Task 3 CostRecordRepository、Task 4 CostQueryRequest | ✅ 一致 |
+| `CostQueryRequest` | Task 4 DTO | Task 4 Service、Task 5 Controller | ✅ 一致 |
+| `CostSummaryDTO` | Task 4 DTO | Task 5 Controller、Task 6 costApi.ts、Task 7 hooks | ✅ 一致 |
+| `DimensionStatDTO` | Task 4 DTO | Task 4 Service、Task 5 ExcelExportService | ✅ 一致 |
+| `ProjectCostDTO.calculateDerived()` | Task 4 DTO | Task 4 Service.getProjectCost | ✅ 一致 |
+| `CostSummary` (TS) | Task 6 cost.ts | Task 7 useCostData、Dashboard | ✅ 一致 |
+| `ProjectCost` (TS) | Task 6 cost.ts | Task 7 useCostData、ProjectCostPage、ProjectBudgetBar | ✅ 一致 |
+| `DimensionStat` (TS) | Task 6 cost.ts | Task 7 全部图表组件、CostAnalysis | ✅ 一致 |
+| `getCostSummary(CostQueryRequest)` | Task 4 Service | Task 5 Controller | ✅ 一致 |
+| `exportSummaryUrl(params)` | Task 6 costApi.ts | Task 7 CostAnalysis、ProjectCost | ✅ 一致 |
+
+无命名冲突。✅
+
+---
+
+## Execution Handoff
+
+Plan complete and saved to `docs/superpowers/plans/2026-07-31-cost-analysis-report.md`。两种执行方案：
+
+**1. Subagent-Driven (recommended)** - 每个 Task 派发一个独立 subagent 执行，Task 间做两阶段 review，快速迭代。
+
+**2. Inline Execution** - 在当前会话中按 Task 顺序执行，带 checkpoint review。
+
+> 注意：因硬性约束禁止 Git 写操作（commit/push 等），计划中的 `git add` / `git commit` 步骤在实际执行时应跳过或由人工执行。构建验证步骤（`mvn compile` / `pnpm build`）可正常执行。
