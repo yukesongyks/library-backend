@@ -1,0 +1,28 @@
+{
+  "task_id": "DEV-966dcd0a-7905-11f1-9649-3b4281182f10-e4c30e24-0b27-44a9-bfb0-05e8409c843b",
+  "stage": "review",
+  "blocker_count": 3,
+  "blocker_details": [
+    {
+      "id": "P0-1",
+      "file": "src/main/java/com/antgroup/library/book/service/impl/BookServiceImpl.java",
+      "line": "64-80",
+      "rule": "G1.1",
+      "description": "createBook 并发竞态：selectByIsbn→insert 无锁无唯一约束异常捕获，并发请求可绕过 ISBN 唯一校验导致重复插入"
+    },
+    {
+      "id": "P0-2",
+      "file": "src/main/java/com/antgroup/library/borrow/service/impl/BorrowRecordServiceImpl.java",
+      "line": "64-80",
+      "rule": "G1.1",
+      "description": "borrowBook 并发竞态：check stock→deductStock→insert record 链路无 SELECT FOR UPDATE，两线程同时借库存=1的书可都通过 stock>0 校验"
+    },
+    {
+      "id": "P0-3",
+      "file": "src/main/java/com/antgroup/library/borrow/service/impl/BorrowRecordServiceImpl.java",
+      "line": "64",
+      "rule": "G2.1",
+      "description": "borrowBook 无幂等键：用户快速重复提交可创建多条借阅记录，违反 G2.1"
+    }
+  ]
+}
