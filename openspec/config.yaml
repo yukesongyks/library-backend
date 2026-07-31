@@ -1,0 +1,13 @@
+context:
+  project: library-system
+  language: java
+  framework: spring-boot
+rules:
+  proposal:
+    require_scope: true
+    require_non_goals: true
+  specs:
+    scenario_format: given-when-then
+  tasks:
+    require_checkboxes: true
+    require_validation_tasks: true
