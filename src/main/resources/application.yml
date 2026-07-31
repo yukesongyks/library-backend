@@ -1,0 +1,8 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: library-backend
+  jackson:
+    default-property-inclusion: non_null
