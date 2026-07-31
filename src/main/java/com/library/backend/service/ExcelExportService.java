@@ -3,11 +3,18 @@ package com.library.backend.service;
 import com.library.backend.dto.CostSummaryDTO;
 import com.library.backend.dto.DimensionStatDTO;
 import com.library.backend.dto.ProjectCostDTO;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -18,7 +25,7 @@ public class ExcelExportService {
      * 成本汇总 Excel 导出（S06）。
      * Sheet1 总览 + Sheet2 部门明细 + Sheet3 角色明细 + Sheet4 月份明细。
      */
-    public byte[] exportCostSummary(CostSummaryDTO summary) throws Exception {
+    public byte[] exportCostSummary(CostSummaryDTO summary) throws IOException {
         try (Workbook workbook = new XSSFWorkbook();
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             // Sheet1 总览
@@ -46,7 +53,7 @@ public class ExcelExportService {
      * 项目成本 Excel 导出（S07）。
      * Sheet1 项目列表（项目名/预算/实际/占比/超支）。
      */
-    public byte[] exportProjectCost(List<ProjectCostDTO> projects) throws Exception {
+    public byte[] exportProjectCost(List<ProjectCostDTO> projects) throws IOException {
         try (Workbook workbook = new XSSFWorkbook();
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Sheet sheet = workbook.createSheet("项目成本");

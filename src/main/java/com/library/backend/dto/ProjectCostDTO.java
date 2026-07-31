@@ -15,11 +15,12 @@ public class ProjectCostDTO {
     private BigDecimal overspendAmount;
 
     public void calculateDerived() {
+        BigDecimal actual = actualCost != null ? actualCost : BigDecimal.ZERO;
         if (budgetAmount != null && budgetAmount.compareTo(BigDecimal.ZERO) > 0) {
-            this.budgetUsageRate = actualCost
+            this.budgetUsageRate = actual
                 .multiply(new BigDecimal("100"))
                 .divide(budgetAmount, 2, RoundingMode.HALF_UP);
-            this.overspendAmount = actualCost.subtract(budgetAmount).max(BigDecimal.ZERO);
+            this.overspendAmount = actual.subtract(budgetAmount).max(BigDecimal.ZERO);
         } else {
             this.budgetUsageRate = BigDecimal.ZERO;
             this.overspendAmount = BigDecimal.ZERO;

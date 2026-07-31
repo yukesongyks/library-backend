@@ -10,8 +10,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.Valid;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -28,7 +32,7 @@ public class CostAnalysisController {
      * W01 成本汇总查询
      */
     @GetMapping("/summary")
-    public CostSummaryDTO getSummary(CostQueryRequest request) {
+    public CostSummaryDTO getSummary(@Valid CostQueryRequest request) {
         return costAnalysisService.getCostSummary(request);
     }
 
@@ -70,7 +74,7 @@ public class CostAnalysisController {
      * W06 成本汇总 Excel 导出
      */
     @GetMapping("/export/summary")
-    public ResponseEntity<byte[]> exportSummary(CostQueryRequest request) throws Exception {
+    public ResponseEntity<byte[]> exportSummary(@Valid CostQueryRequest request) throws Exception {
         CostSummaryDTO summary = costAnalysisService.getCostSummary(request);
         byte[] bytes = excelExportService.exportCostSummary(summary);
         String filename = URLEncoder.encode("成本汇总报表.xlsx", StandardCharsets.UTF_8);
@@ -85,7 +89,8 @@ public class CostAnalysisController {
      * W07 项目成本 Excel 导出
      */
     @GetMapping("/export/project")
-    public ResponseEntity<byte[]> exportProjectCost(@RequestParam(required = false) Integer budgetYear) throws Exception {
+    public ResponseEntity<byte[]> exportProjectCost(
+            @RequestParam(required = false) Integer budgetYear) throws Exception {
         List<ProjectCostDTO> projects = costAnalysisService.getProjectCost(budgetYear);
         byte[] bytes = excelExportService.exportProjectCost(projects);
         String filename = URLEncoder.encode("项目成本报表.xlsx", StandardCharsets.UTF_8);

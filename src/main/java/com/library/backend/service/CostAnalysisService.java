@@ -11,6 +11,7 @@ import com.library.backend.repository.CostRecordRepository;
 import com.library.backend.repository.ProjectBudgetRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CostAnalysisService {
 
     private final CostRecordRepository costRecordRepository;
@@ -60,7 +62,12 @@ public class CostAnalysisService {
             .map(CostRecord::getAmount)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
         dto.setTotalCost(total);
-        dto.setLaborCost(total);
+        // 人力成本仅统计 costType='LABOR' 的记录
+        BigDecimal laborTotal = records.stream()
+            .filter(r -> "LABOR".equals(r.getCostType()))
+            .map(CostRecord::getAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        dto.setLaborCost(laborTotal);
         dto.setRecordCount(records.size());
         dto.setByDepartment(groupByDimension(records, r -> r.getDepartment().getName()));
         dto.setByRole(groupByDimension(records, r -> r.getEmployee().getRole().name()));
@@ -75,13 +82,13 @@ public class CostAnalysisService {
     public List<DimensionStatDTO> getMonthlyTrend(Integer costYear) {
         List<Object[]> rows = costRecordRepository.findMonthlyTrend(costYear);
         BigDecimal total = rows.stream()
-            .map(r -> (BigDecimal) r[2])
+            .map(r -> toBigDecimal(r[2]))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
         return rows.stream().map(r -> new DimensionStatDTO(
-            r[0] + "-" + String.format("%02d", (Integer) r[1]),
-            (BigDecimal) r[2],
+            r[0] + "-" + String.format("%02d", toInt(r[1])),
+            toBigDecimal(r[2]),
             total.compareTo(BigDecimal.ZERO) > 0
-                ? ((BigDecimal) r[2]).multiply(new BigDecimal("100"))
+                ? toBigDecimal(r[2]).multiply(new BigDecimal("100"))
                     .divide(total, 2, RoundingMode.HALF_UP).doubleValue()
                 : 0.0
         )).collect(Collectors.toList());
@@ -92,17 +99,7 @@ public class CostAnalysisService {
      */
     public List<DimensionStatDTO> getCostByRole() {
         List<Object[]> rows = costRecordRepository.findCostByRole();
-        BigDecimal total = rows.stream()
-            .map(r -> (BigDecimal) r[1])
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return rows.stream().map(r -> new DimensionStatDTO(
-            ((Employee.EmployeeRole) r[0]).name(),
-            (BigDecimal) r[1],
-            total.compareTo(BigDecimal.ZERO) > 0
-                ? ((BigDecimal) r[1]).multiply(new BigDecimal("100"))
-                    .divide(total, 2, RoundingMode.HALF_UP).doubleValue()
-                : 0.0
-        )).collect(Collectors.toList());
+        return mapRoleStats(rows);
     }
 
     /**
@@ -114,14 +111,14 @@ public class CostAnalysisService {
             ? projectBudgetRepository.findByBudgetYear(budgetYear)
             : projectBudgetRepository.findAll();
 
-        // 查询项目实际消耗
-        List<Object[]> actualRows = costRecordRepository.findCostByProject();
+        // 查询项目实际消耗（按 budgetYear 过滤，保证预算与实际周期一致）
+        List<Object[]> actualRows = costRecordRepository.findCostByProject(budgetYear);
 
         // 构建 projectId -> actualCost 映射
         Map<Long, BigDecimal> actualMap = actualRows.stream()
             .collect(Collectors.toMap(
-                r -> (Long) r[0],
-                r -> (BigDecimal) r[2],
+                r -> ((Number) r[0]).longValue(),
+                r -> toBigDecimal(r[2]),
                 BigDecimal::add));
 
         List<ProjectCostDTO> result = new ArrayList<>();
@@ -145,34 +142,24 @@ public class CostAnalysisService {
     public List<DimensionStatDTO> getCostByDimension(String dimension, Integer year) {
         switch (dimension) {
             case "department": {
-                List<Object[]> rows = costRecordRepository.findCostByDepartment();
-                return toDimensionStatDTO(rows, 1);
+                List<Object[]> rows = costRecordRepository.findCostByDepartment(year);
+                return toDimensionStatDTO(rows, 2);
             }
             case "businessLine": {
-                List<Object[]> rows = costRecordRepository.findCostByBusinessLine();
-                return toDimensionStatDTO(rows, 1);
+                List<Object[]> rows = costRecordRepository.findCostByBusinessLine(year);
+                return toDimensionStatDTO(rows, 2);
             }
             case "project": {
-                List<Object[]> rows = costRecordRepository.findCostByProject();
-                return toDimensionStatDTO(rows, 1);
+                List<Object[]> rows = costRecordRepository.findCostByProject(year);
+                return toDimensionStatDTO(rows, 2);
             }
             case "employee": {
-                List<Object[]> rows = costRecordRepository.findCostByEmployee();
-                return toDimensionStatDTO(rows, 1);
+                List<Object[]> rows = costRecordRepository.findCostByEmployee(year);
+                return toDimensionStatDTO(rows, 2);
             }
             case "role": {
                 List<Object[]> rows = costRecordRepository.findCostByRole();
-                BigDecimal total = rows.stream()
-                    .map(r -> (BigDecimal) r[1])
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-                return rows.stream().map(r -> new DimensionStatDTO(
-                    ((Employee.EmployeeRole) r[0]).name(),
-                    (BigDecimal) r[1],
-                    total.compareTo(BigDecimal.ZERO) > 0
-                        ? ((BigDecimal) r[1]).multiply(new BigDecimal("100"))
-                            .divide(total, 2, RoundingMode.HALF_UP).doubleValue()
-                        : 0.0
-                )).collect(Collectors.toList());
+                return mapRoleStats(rows);
             }
             case "quarter": {
                 List<CostRecord> records = costRecordRepository.findByFilters(
@@ -226,13 +213,27 @@ public class CostAnalysisService {
 
     private List<DimensionStatDTO> toDimensionStatDTO(List<Object[]> rows, int amountIndex) {
         BigDecimal total = rows.stream()
-            .map(r -> (BigDecimal) r[amountIndex])
+            .map(r -> toBigDecimal(r[amountIndex]))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
         return rows.stream().map(r -> new DimensionStatDTO(
             String.valueOf(r[amountIndex - 1]),
-            (BigDecimal) r[amountIndex],
+            toBigDecimal(r[amountIndex]),
             total.compareTo(BigDecimal.ZERO) > 0
-                ? ((BigDecimal) r[amountIndex]).multiply(new BigDecimal("100"))
+                ? toBigDecimal(r[amountIndex]).multiply(new BigDecimal("100"))
+                    .divide(total, 2, RoundingMode.HALF_UP).doubleValue()
+                : 0.0
+        )).collect(Collectors.toList());
+    }
+
+    private List<DimensionStatDTO> mapRoleStats(List<Object[]> rows) {
+        BigDecimal total = rows.stream()
+            .map(r -> toBigDecimal(r[1]))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return rows.stream().map(r -> new DimensionStatDTO(
+            ((Employee.EmployeeRole) r[0]).name(),
+            toBigDecimal(r[1]),
+            total.compareTo(BigDecimal.ZERO) > 0
+                ? toBigDecimal(r[1]).multiply(new BigDecimal("100"))
                     .divide(total, 2, RoundingMode.HALF_UP).doubleValue()
                 : 0.0
         )).collect(Collectors.toList());
@@ -250,5 +251,25 @@ public class CostAnalysisService {
 
     private int monthToQuarter(int month) {
         return (month - 1) / 3 + 1;
+    }
+
+    /**
+     * 安全提取 BigDecimal，兼容不同 JPA dialect 返回类型（BigDecimal / BigInteger / Long）。
+     */
+    private BigDecimal toBigDecimal(Object value) {
+        if (value == null) {
+            return BigDecimal.ZERO;
+        }
+        if (value instanceof BigDecimal) {
+            return (BigDecimal) value;
+        }
+        return new BigDecimal(((Number) value).toString());
+    }
+
+    /**
+     * 安全提取 int，兼容 Integer / Long / BigInteger。
+     */
+    private int toInt(Object value) {
+        return ((Number) value).intValue();
     }
 }

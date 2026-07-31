@@ -9,11 +9,11 @@ spring:
     password:
   h2:
     console:
-      enabled: true
+      enabled: false
       path: /h2-console
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: none
     show-sql: true
     properties:
       hibernate:
@@ -27,3 +27,7 @@ spring:
 logging:
   level:
     com.library.backend: DEBUG
+
+app:
+  cors:
+    allowed-origins: http://localhost:5173

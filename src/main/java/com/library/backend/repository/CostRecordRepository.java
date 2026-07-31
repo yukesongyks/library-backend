@@ -8,10 +8,14 @@ import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 public interface CostRecordRepository extends JpaRepository<CostRecord, Long> {
 
-    @Query("SELECT c FROM CostRecord c WHERE " +
+    @Query("SELECT c FROM CostRecord c " +
+           "LEFT JOIN FETCH c.department " +
+           "LEFT JOIN FETCH c.employee " +
+           "WHERE " +
            "(:departmentId IS NULL OR c.department.id = :departmentId) AND " +
            "(:businessLineId IS NULL OR c.businessLine.id = :businessLineId) AND " +
            "(:projectId IS NULL OR c.project.id = :projectId) AND " +
@@ -38,22 +42,25 @@ public interface CostRecordRepository extends JpaRepository<CostRecord, Long> {
     List<Object[]> findCostByRole();
 
     @Query("SELECT c.project.id, c.project.name, SUM(c.amount) FROM CostRecord c " +
-           "WHERE c.project IS NOT NULL " +
+           "WHERE c.project IS NOT NULL AND (:costYear IS NULL OR c.costYear = :costYear) " +
            "GROUP BY c.project.id, c.project.name")
-    List<Object[]> findCostByProject();
+    List<Object[]> findCostByProject(@Param("costYear") Integer costYear);
 
     @Query("SELECT c.department.id, c.department.name, SUM(c.amount) FROM CostRecord c " +
+           "WHERE (:costYear IS NULL OR c.costYear = :costYear) " +
            "GROUP BY c.department.id, c.department.name")
-    List<Object[]> findCostByDepartment();
+    List<Object[]> findCostByDepartment(@Param("costYear") Integer costYear);
 
     @Query("SELECT c.businessLine.id, c.businessLine.name, SUM(c.amount) FROM CostRecord c " +
+           "WHERE (:costYear IS NULL OR c.costYear = :costYear) " +
            "GROUP BY c.businessLine.id, c.businessLine.name")
-    List<Object[]> findCostByBusinessLine();
+    List<Object[]> findCostByBusinessLine(@Param("costYear") Integer costYear);
 
     @Query("SELECT c.employee.id, c.employee.name, SUM(c.amount) FROM CostRecord c " +
+           "WHERE (:costYear IS NULL OR c.costYear = :costYear) " +
            "GROUP BY c.employee.id, c.employee.name")
-    List<Object[]> findCostByEmployee();
+    List<Object[]> findCostByEmployee(@Param("costYear") Integer costYear);
 
     @Query("SELECT SUM(c.amount) FROM CostRecord c WHERE c.costYear = :year")
-    BigDecimal findTotalCostByYear(@Param("year") Integer year);
+    Optional<BigDecimal> findTotalCostByYear(@Param("year") Integer year);
 }
