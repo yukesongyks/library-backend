@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.antgroup.library.book.mapper.BookMapper">
+
+    <resultMap id="bookResultMap" type="com.antgroup.library.book.entity.Book">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="author" column="author"/>
+        <result property="isbn" column="isbn"/>
+        <result property="publisher" column="publisher"/>
+        <result property="category" column="category"/>
+        <result property="stock" column="stock"/>
+        <result property="totalStock" column="total_stock"/>
+        <result property="description" column="description"/>
+        <result property="isDeleted" column="is_deleted"/>
+        <result property="gmtCreate" column="gmt_create"/>
+        <result property="gmtModified" column="gmt_modified"/>
+    </resultMap>
+
+    <sql id="baseColumns">
+        id, title, author, isbn, publisher, category, stock, total_stock, description,
+        is_deleted, gmt_create, gmt_modified
+    </sql>
+
+    <select id="selectById" resultMap="bookResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM book
+        WHERE id = #{id} AND is_deleted = 0
+    </select>
+
+    <select id="selectByIsbn" resultMap="bookResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM book
+        WHERE isbn = #{isbn} AND is_deleted = 0
+    </select>
+
+    <select id="selectPage" resultMap="bookResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM book
+        WHERE is_deleted = 0
+        <if test="title != null and title != ''">
+            AND title LIKE CONCAT('%', #{title}, '%')
+        </if>
+        <if test="author != null and author != ''">
+            AND author LIKE CONCAT('%', #{author}, '%')
+        </if>
+        <if test="isbn != null and isbn != ''">
+            AND isbn = #{isbn}
+        </if>
+        ORDER BY gmt_modified DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <select id="selectCount" resultType="long">
+        SELECT COUNT(1)
+        FROM book
+        WHERE is_deleted = 0
+        <if test="title != null and title != ''">
+            AND title LIKE CONCAT('%', #{title}, '%')
+        </if>
+        <if test="author != null and author != ''">
+            AND author LIKE CONCAT('%', #{author}, '%')
+        </if>
+        <if test="isbn != null and isbn != ''">
+            AND isbn = #{isbn}
+        </if>
+    </select>
+
+    <insert id="insert" parameterType="com.antgroup.library.book.entity.Book" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO book (title, author, isbn, publisher, category, stock, total_stock, description, is_deleted)
+        VALUES (#{title}, #{author}, #{isbn}, #{publisher}, #{category}, #{stock}, #{totalStock}, #{description}, 0)
+    </insert>
+
+    <update id="update" parameterType="com.antgroup.library.book.entity.Book">
+        UPDATE book
+        <set>
+            <if test="title != null">title = #{title},</if>
+            <if test="author != null">author = #{author},</if>
+            <if test="isbn != null">isbn = #{isbn},</if>
+            <if test="publisher != null">publisher = #{publisher},</if>
+            <if test="category != null">category = #{category},</if>
+            <if test="description != null">description = #{description},</if>
+            gmt_modified = CURRENT_TIMESTAMP
+        </set>
+        WHERE id = #{id} AND is_deleted = 0
+    </update>
+
+    <update id="logicDelete">
+        UPDATE book SET is_deleted = 1, gmt_modified = CURRENT_TIMESTAMP
+        WHERE id = #{id} AND is_deleted = 0
+    </update>
+
+    <update id="deductStock">
+        UPDATE book SET stock = stock - #{quantity}, gmt_modified = CURRENT_TIMESTAMP
+        WHERE id = #{bookId} AND is_deleted = 0 AND stock >= #{quantity}
+    </update>
+
+    <update id="restoreStock">
+        UPDATE book SET stock = stock + #{quantity}, gmt_modified = CURRENT_TIMESTAMP
+        WHERE id = #{bookId} AND is_deleted = 0
+    </update>
+
+</mapper>
