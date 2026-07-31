@@ -1,0 +1,9 @@
+{
+  "blocker_count": 0,
+  "p0_count": 0,
+  "p1_count": 1,
+  "p2_count": 3,
+  "review_stage": "review",
+  "cr_report_path": ".agents/20260731-helloworld哈希冒泡重跑/cr_report.md",
+  "merge_recommendation": "修复后合并"
+}
