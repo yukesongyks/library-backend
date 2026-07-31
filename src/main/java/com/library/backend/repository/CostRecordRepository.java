@@ -38,8 +38,9 @@ public interface CostRecordRepository extends JpaRepository<CostRecord, Long> {
     List<Object[]> findMonthlyTrend(@Param("costYear") Integer costYear);
 
     @Query("SELECT c.employee.role, SUM(c.amount) FROM CostRecord c " +
+           "WHERE (:costYear IS NULL OR c.costYear = :costYear) " +
            "GROUP BY c.employee.role")
-    List<Object[]> findCostByRole();
+    List<Object[]> findCostByRole(@Param("costYear") Integer costYear);
 
     @Query("SELECT c.project.id, c.project.name, SUM(c.amount) FROM CostRecord c " +
            "WHERE c.project IS NOT NULL AND (:costYear IS NULL OR c.costYear = :costYear) " +

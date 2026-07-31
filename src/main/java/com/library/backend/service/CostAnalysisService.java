@@ -98,7 +98,7 @@ public class CostAnalysisService {
      * 角色成本占比查询（S03）。
      */
     public List<DimensionStatDTO> getCostByRole() {
-        List<Object[]> rows = costRecordRepository.findCostByRole();
+        List<Object[]> rows = costRecordRepository.findCostByRole(null);
         return mapRoleStats(rows);
     }
 
@@ -158,7 +158,7 @@ public class CostAnalysisService {
                 return toDimensionStatDTO(rows, 2);
             }
             case "role": {
-                List<Object[]> rows = costRecordRepository.findCostByRole();
+                List<Object[]> rows = costRecordRepository.findCostByRole(year);
                 return mapRoleStats(rows);
             }
             case "quarter": {
@@ -230,7 +230,7 @@ public class CostAnalysisService {
             .map(r -> toBigDecimal(r[1]))
             .reduce(BigDecimal.ZERO, BigDecimal::add);
         return rows.stream().map(r -> new DimensionStatDTO(
-            ((Employee.EmployeeRole) r[0]).name(),
+            toEnum(r[0], Employee.EmployeeRole.class).name(),
             toBigDecimal(r[1]),
             total.compareTo(BigDecimal.ZERO) > 0
                 ? toBigDecimal(r[1]).multiply(new BigDecimal("100"))
@@ -271,5 +271,18 @@ public class CostAnalysisService {
      */
     private int toInt(Object value) {
         return ((Number) value).intValue();
+    }
+
+    /**
+     * 安全提取 Enum，兼容 JPA EnumType.STRING 直接返回枚举实例或字符串值。
+     */
+    private <T extends Enum<T>> T toEnum(Object value, Class<T> enumType) {
+        if (value == null) {
+            return null;
+        }
+        if (enumType.isInstance(value)) {
+            return enumType.cast(value);
+        }
+        return Enum.valueOf(enumType, value.toString());
     }
 }

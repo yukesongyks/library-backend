@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
+import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -74,7 +75,7 @@ public class CostAnalysisController {
      * W06 成本汇总 Excel 导出
      */
     @GetMapping("/export/summary")
-    public ResponseEntity<byte[]> exportSummary(@Valid CostQueryRequest request) throws Exception {
+    public ResponseEntity<byte[]> exportSummary(@Valid CostQueryRequest request) throws IOException {
         CostSummaryDTO summary = costAnalysisService.getCostSummary(request);
         byte[] bytes = excelExportService.exportCostSummary(summary);
         String filename = URLEncoder.encode("成本汇总报表.xlsx", StandardCharsets.UTF_8);
@@ -90,7 +91,7 @@ public class CostAnalysisController {
      */
     @GetMapping("/export/project")
     public ResponseEntity<byte[]> exportProjectCost(
-            @RequestParam(required = false) Integer budgetYear) throws Exception {
+            @RequestParam(required = false) Integer budgetYear) throws IOException {
         List<ProjectCostDTO> projects = costAnalysisService.getProjectCost(budgetYear);
         byte[] bytes = excelExportService.exportProjectCost(projects);
         String filename = URLEncoder.encode("项目成本报表.xlsx", StandardCharsets.UTF_8);
