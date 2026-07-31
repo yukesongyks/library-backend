@@ -1,0 +1,14 @@
+# OpenSpec configuration for library-backend
+# Manually initialized during /openspec-propose (clarify stage).
+# Run `npm install -g @fission-ai/openspec@latest` to enable the CLI for validation/status.
+
+context:
+  project: library-backend
+  description: 图书管理系统后端（Spring Boot）。本次承载 hello world-1.0T2 重跑的三接口、导出与调用埋点。
+  language: zh-CN
+
+rules:
+  # Artifacts must be implementable without reading the chat transcript.
+  requirements_must_be_testable: true
+  # Never implement product code during propose.
+  no_code_in_propose: true
