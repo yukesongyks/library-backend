@@ -25,6 +25,11 @@ public interface BorrowRecordMapper {
      */
     int countUnreturnedByBook(@Param("bookId") Long bookId);
 
+    /**
+     * 幂等防重：查询某读者对某图书是否存在借阅中/逾期状态的记录（短窗口防重复提交，设计文档 R16）。
+     */
+    int countActiveBorrowByReaderAndBook(@Param("readerId") Long readerId, @Param("bookId") Long bookId);
+
     List<BorrowRecordVO> selectPage(@Param("offset") int offset,
                                   @Param("pageSize") int pageSize,
                                   @Param("readerId") Long readerId,

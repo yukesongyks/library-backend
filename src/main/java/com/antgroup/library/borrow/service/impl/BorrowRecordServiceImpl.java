@@ -20,8 +20,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -63,9 +64,6 @@ public class BorrowRecordServiceImpl implements BorrowRecordService {
     @Transactional(rollbackFor = Exception.class)
     public Long borrowBook(BorrowRequest request) {
         Book book = bookService.getBookEntity(request.getBookId());
-        if (book.getStock() == null || book.getStock() <= 0) {
-            throw new BizException(ErrorCode.BOOK_005);
-        }
 
         Reader reader = readerService.getReaderEntity(request.getReaderId());
         if (!ReaderStatus.ACTIVE.getValue().equals(reader.getStatus())) {
@@ -77,10 +75,18 @@ public class BorrowRecordServiceImpl implements BorrowRecordService {
             throw new BizException(ErrorCode.BORROW_001);
         }
 
+        // 幂等防重（G2.1）：同一读者对同一图书已有借阅中/逾期记录时拒绝重复借书（设计文档 R16）
+        int activeBorrow = borrowRecordMapper.countActiveBorrowByReaderAndBook(
+                request.getReaderId(), request.getBookId());
+        if (activeBorrow > 0) {
+            throw new BizException(ErrorCode.BORROW_001);
+        }
+
+        // 库存扣减为原子 SQL（stock >= #{quantity}），若返回 0 行说明库存不足（消除 TOCTOU 窗口）
         bookService.deductStock(request.getBookId(), 1);
 
         Date now = new Date();
-        Date dueTime = addDays(now, BORROW_PERIOD_DAYS);
+        Date dueTime = computeDueTime(now);
 
         BorrowRecord record = new BorrowRecord();
         record.setBookId(request.getBookId());
@@ -92,8 +98,8 @@ public class BorrowRecordServiceImpl implements BorrowRecordService {
         record.setIsOverdue(0);
         borrowRecordMapper.insert(record);
 
-        log.info("借书成功 recordId={} bookId={} readerId={}",
-                record.getId(), request.getBookId(), request.getReaderId());
+        log.info("借书成功 recordId={} bookId={} readerId={} requestId={}",
+                record.getId(), request.getBookId(), request.getReaderId(), request.getRequestId());
         return record.getId();
     }
 
@@ -120,10 +126,13 @@ public class BorrowRecordServiceImpl implements BorrowRecordService {
         log.info("还书成功 recordId={} bookId={} isOverdue={}", recordId, record.getBookId(), isOverdue);
     }
 
-    private Date addDays(Date date, int days) {
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(date);
-        calendar.add(Calendar.DAY_OF_MONTH, days);
-        return calendar.getTime();
+    /**
+     * 使用 java.time API 计算应还时间（借阅+30天），指定 Asia/Shanghai 时区避免 JVM 默认时区偏移（P1-6/P2-1）。
+     */
+    private Date computeDueTime(Date borrowTime) {
+        ZonedDateTime zonedBorrow = borrowTime.toInstant()
+                .atZone(ZoneId.of("Asia/Shanghai"));
+        ZonedDateTime zonedDue = zonedBorrow.plusDays(BORROW_PERIOD_DAYS);
+        return Date.from(zonedDue.toInstant());
     }
 }

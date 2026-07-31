@@ -5,6 +5,7 @@ import com.antgroup.library.book.dto.BookQueryRequest;
 import com.antgroup.library.book.dto.BookUpdateRequest;
 import com.antgroup.library.book.dto.BookVO;
 import com.antgroup.library.book.entity.Book;
+import com.antgroup.library.book.enums.BookDeleteFlag;
 import com.antgroup.library.book.mapper.BookMapper;
 import com.antgroup.library.book.service.BookService;
 import com.antgroup.library.borrow.mapper.BorrowRecordMapper;
@@ -13,7 +14,6 @@ import com.antgroup.library.common.exception.ErrorCode;
 import com.antgroup.library.common.response.PageResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -122,6 +122,7 @@ public class BookServiceImpl implements BookService {
         if (unreturned > 0) {
             throw new BizException(ErrorCode.BOOK_004);
         }
+        log.info("逻辑删除图书 id={} deleteFlag={}", id, BookDeleteFlag.DELETED.getValue());
         bookMapper.logicDelete(id);
     }
 
@@ -156,7 +157,15 @@ public class BookServiceImpl implements BookService {
 
     private BookVO convertToVO(Book book) {
         BookVO vo = new BookVO();
-        BeanUtils.copyProperties(book, vo);
+        vo.setId(book.getId());
+        vo.setTitle(book.getTitle());
+        vo.setAuthor(book.getAuthor());
+        vo.setIsbn(book.getIsbn());
+        vo.setPublisher(book.getPublisher());
+        vo.setCategory(book.getCategory());
+        vo.setStock(book.getStock());
+        vo.setTotalStock(book.getTotalStock());
+        vo.setDescription(book.getDescription());
         return vo;
     }
 }

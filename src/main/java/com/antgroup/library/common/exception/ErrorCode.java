@@ -10,6 +10,7 @@ public enum ErrorCode {
 
     // 公共错误码
     COMMON_001("COMMON_001", "参数校验失败"),
+    COMMON_002("COMMON_002", "数据已存在，请勿重复提交"),
     COMMON_999("COMMON_999", "系统异常"),
 
     // 图书模块

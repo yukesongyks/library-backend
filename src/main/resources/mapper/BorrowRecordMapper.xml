@@ -50,6 +50,13 @@
           AND status IN ('BORROWING', 'OVERDUE')
     </select>
 
+    <select id="countActiveBorrowByReaderAndBook" resultType="int">
+        SELECT COUNT(1)
+        FROM borrow_record
+        WHERE reader_id = #{readerId} AND book_id = #{bookId} AND is_deleted = 0
+          AND status IN ('BORROWING', 'OVERDUE')
+    </select>
+
     <select id="selectPage" resultMap="borrowRecordVOResultMap">
         SELECT br.id, br.book_id, br.reader_id, br.borrow_time, br.due_time, br.return_time,
                br.status, br.is_overdue,
