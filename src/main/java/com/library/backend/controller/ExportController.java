@@ -21,10 +21,10 @@ public class ExportController {
 
     @PostMapping("/export")
     public void export(@RequestBody ExportRequest request, HttpServletResponse response) throws IOException {
-        Map<String, Object> filters = request.getFilters();
-        String startDate = filters != null ? (String) filters.get("startDate") : null;
-        String endDate = filters != null ? (String) filters.get("endDate") : null;
-        String apiName = filters != null ? (String) filters.get("apiName") : null;
+        Map<String, String> filters = request.getFilters();
+        String startDate = filters != null ? filters.get("startDate") : null;
+        String endDate = filters != null ? filters.get("endDate") : null;
+        String apiName = filters != null ? filters.get("apiName") : null;
 
         exportService.export(
                 request.getTab(),

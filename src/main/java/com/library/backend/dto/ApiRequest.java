@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
 import java.util.List;
 
 /**
@@ -26,6 +27,7 @@ public class ApiRequest {
 
     /** 人员类型：EMPLOYEE | CONTRACTOR | INTERN */
     @NotBlank(message = "userType不能为空")
+    @Pattern(regexp = "^(EMPLOYEE|CONTRACTOR|INTERN)$", message = "userType必须为EMPLOYEE、CONTRACTOR或INTERN")
     private String userType;
 
     /** 人员层级 */
@@ -33,6 +35,9 @@ public class ApiRequest {
 
     /** 人员部门 */
     private String department;
+
+    /** 哈希算法名称（如 SHA-256），哈希接口必填 */
+    private String algorithm;
 
     /** 哈希算法输入（可选） */
     private String input;
