@@ -5,21 +5,38 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.NotBlank;
 import java.util.List;
 
+/**
+ * API 统一请求 DTO
+ *
+ * @author AI
+ * @date 2026/08/06
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ApiRequest {
+
+    /** 用户ID */
+    @NotBlank(message = "userId不能为空")
     private String userId;
-    private String userType; // EMPLOYEE | CONTRACTOR | INTERN
+
+    /** 人员类型：EMPLOYEE | CONTRACTOR | INTERN */
+    @NotBlank(message = "userType不能为空")
+    private String userType;
+
+    /** 人员层级 */
     private String level;
+
+    /** 人员部门 */
     private String department;
 
-    // For hash API (optional)
+    /** 哈希算法输入（可选） */
     private String input;
 
-    // For bubble-sort API (optional)
+    /** 冒泡排序数组（可选） */
     private List<Integer> array;
 }
