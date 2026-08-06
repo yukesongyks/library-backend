@@ -11,7 +11,7 @@ type BubbleSortResult = {
 bubbleSortRoute.post("/bubble-sort", (req, res) => {
   const arr = req.body?.array;
 
-  if (!Array.isArray(arr) || !arr.every((v) => typeof v === "number")) {
+  if (!Array.isArray(arr)) {
     res.status(422).json(fail(422, "array must be number[]"));
     return;
   }
@@ -21,7 +21,20 @@ bubbleSortRoute.post("/bubble-sort", (req, res) => {
     return;
   }
 
-  const sorted = bubbleSort(arr as number[]);
-  const data: BubbleSortResult = { sorted };
-  res.json(success(data));
+  for (let i = 0; i < arr.length; i++) {
+    const v = arr[i];
+    if (typeof v !== "number" || !Number.isFinite(v)) {
+      res.status(422).json(fail(422, "array must contain finite numbers only"));
+      return;
+    }
+  }
+
+  try {
+    const sorted = bubbleSort(arr as number[]);
+    const data: BubbleSortResult = { sorted };
+    res.json(success(data));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "bubble sort failed";
+    res.status(500).json(fail(500, message));
+  }
 });

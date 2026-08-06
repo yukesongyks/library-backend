@@ -40,22 +40,28 @@ exportRoute.get("/export", async (req, res) => {
     return;
   }
 
-  const dataRows = buildDataRows(tab);
+  try {
+    const dataRows = buildDataRows(tab);
 
-  if (dataRows.length > 10000) {
-    res.status(422).json(fail(422, "数据量过大，请筛选后导出"));
-    return;
+    if (dataRows.length > 10000) {
+      res.status(422).json(fail(422, "数据量过大，请筛选后导出"));
+      return;
+    }
+
+    const buffer = await buildExportBuffer(tab, dataRows);
+
+    const encodedFilename = encodeURIComponent(`${tab}.xlsx`);
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${encodedFilename}"; filename*=UTF-8''${encodedFilename}`,
+    );
+    res.send(buffer);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "export failed";
+    res.status(500).json(fail(500, message));
   }
-
-  const buffer = await buildExportBuffer(tab, dataRows);
-
-  res.setHeader(
-    "Content-Type",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  );
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename=${tab}.xlsx`,
-  );
-  res.send(buffer);
 });
