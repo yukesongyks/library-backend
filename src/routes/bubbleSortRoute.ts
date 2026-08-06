@@ -16,6 +16,11 @@ bubbleSortRoute.post("/bubble-sort", (req, res) => {
     return;
   }
 
+  if (arr.length > 10000) {
+    res.status(422).json(fail(422, "array length exceeds 10000"));
+    return;
+  }
+
   const sorted = bubbleSort(arr as number[]);
   const data: BubbleSortResult = { sorted };
   res.json(success(data));

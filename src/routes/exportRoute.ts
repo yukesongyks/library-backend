@@ -41,6 +41,12 @@ exportRoute.get("/export", async (req, res) => {
   }
 
   const dataRows = buildDataRows(tab);
+
+  if (dataRows.length > 10000) {
+    res.status(422).json(fail(422, "数据量过大，请筛选后导出"));
+    return;
+  }
+
   const buffer = await buildExportBuffer(tab, dataRows);
 
   res.setHeader(
