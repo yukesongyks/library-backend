@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -14,10 +16,10 @@ public class ApiRequest {
     private String userType; // EMPLOYEE | CONTRACTOR | INTERN
     private String level;
     private String department;
-    
-    // For hash API
+
+    // For hash API (optional)
     private String input;
-    
-    // For bubble-sort API
-    private int[] array;
+
+    // For bubble-sort API (optional)
+    private List<Integer> array;
 }
