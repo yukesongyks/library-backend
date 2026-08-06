@@ -1,188 +1,122 @@
-# 编码实现报告 — hello world-1.0T2 (library-backend)
+# 编码实现变更摘要 — hello world-1.0T2 (library-backend)
 
 > 阶段：编码实现  
 > 日期：2026-08-06  
+> 关联计划：`.agents/plans/implementation-plan.md`  
 > 状态：✅ 已完成
 
 ---
 
-## 一、实现概述
+## 一、变更文件清单
 
-本次编码实现完成了 `library-backend` 仓库中 Spring Boot 项目的全部后端功能开发，包括：
+### 1.1 新增文件（17个）
 
-1. **三个业务接口**：`/api/hello`、`/api/hash`、`/api/bubble-sort`
-2. **导出接口**：`/api/export`（支持按 tab 类型导出 Excel）
-3. **埋点记录**：AOP 切面自动记录每次接口调用
-4. **报表查询接口**：`/api/stats`（支持多维度聚合查询）
+#### DTO 层 (`src/main/java/com/library/backend/dto/`)
+| 文件 | 说明 |
+|------|------|
+| `ApiRequest.java` | 通用请求体，含 userId/userType/level/department/input/array 字段 |
+| `ApiResponse.java` | 统一响应包装，泛型结构 `{code, message, data}` |
+| `ExportRequest.java` | 导出请求，含 tab + filters Map |
+| `StatsQuery.java` | 报表查询参数，含 dimension/startDate/endDate/apiName |
+| `StatsItem.java` | 报表聚合项，含 label + count |
+| `StatsResponse.java` | 报表响应，含 dimension + items 列表 |
 
----
+#### Service 层 (`src/main/java/com/library/backend/service/`)
+| 文件 | 说明 |
+|------|------|
+| `HelloService.java` | 返回固定字符串 "Hello, World!" |
+| `HashService.java` | SHA-256 哈希计算 |
+| `BubbleSortService.java` | 冒泡排序实现（int[] 输入输出） |
+| `ExportService.java` | EasyExcel 导出，按 tab 类型生成 xlsx |
+| `StatsService.java` | 按维度(userType/level/department)聚合统计 |
 
-## 二、新增/修改文件清单
+#### Controller 层 (`src/main/java/com/library/backend/controller/`)
+| 文件 | 路径 | 方法 | 说明 |
+|------|------|------|------|
+| `HelloController.java` | `/api/hello` | POST | Hello World 接口 |
+| `HashController.java` | `/api/hash` | POST | 哈希算法接口 |
+| `BubbleSortController.java` | `/api/bubble-sort` | POST | 冒泡排序接口 |
+| `ExportController.java` | `/api/export` | POST | Excel 导出接口 |
+| `StatsController.java` | `/api/stats` | GET | 报表查询接口 |
 
-### 2.1 Service 层（5个文件）
+#### Aspect & Config
+| 文件 | 说明 |
+|------|------|
+| `aspect/ApiCallAspect.java` | AOP 切面，拦截 Controller 层异步记录调用日志 |
+| `config/CorsConfig.java` | CORS 配置，允许前端跨域访问 |
+| `config/GlobalExceptionHandler.java` | 全局异常处理，统一错误响应格式 |
 
-| 文件路径 | 说明 |
-|---------|------|
-| `src/main/java/com/library/backend/service/HelloService.java` | Hello 接口服务，返回固定字符串 |
-| `src/main/java/com/library/backend/service/HashService.java` | Hash 接口服务，实现 SHA-256 哈希算法 |
-| `src/main/java/com/library/backend/service/BubbleSortService.java` | 冒泡排序服务，实现经典冒泡排序算法 |
-| `src/main/java/com/library/backend/service/StatsService.java` | 报表统计服务，支持按 userType/level/department 维度聚合 |
-| `src/main/java/com/library/backend/service/ExportService.java` | 导出服务，使用 EasyExcel 生成 xlsx 文件 |
-
-### 2.2 Controller 层（5个文件）
-
-| 文件路径 | 说明 |
-|---------|------|
-| `src/main/java/com/library/backend/controller/HelloController.java` | POST `/api/hello` 端点 |
-| `src/main/java/com/library/backend/controller/HashController.java` | POST `/api/hash` 端点 |
-| `src/main/java/com/library/backend/controller/BubbleSortController.java` | POST `/api/bubble-sort` 端点 |
-| `src/main/java/com/library/backend/controller/ExportController.java` | POST `/api/export` 端点 |
-| `src/main/java/com/library/backend/controller/StatsController.java` | GET `/api/stats` 端点 |
-
-### 2.3 AOP 切面（1个文件）
-
-| 文件路径 | 说明 |
-|---------|------|
-| `src/main/java/com/library/backend/aspect/ApiCallAspect.java` | API 调用埋点切面，异步写入日志表 |
-
-### 2.4 配置类（2个文件）
-
-| 文件路径 | 说明 |
-|---------|------|
-| `src/main/java/com/library/backend/config/CorsConfig.java` | CORS 跨域配置，允许前端访问 |
-| `src/main/java/com/library/backend/config/GlobalExceptionHandler.java` | 全局异常处理，统一错误响应格式 |
-
-### 2.5 实体类修改（1个文件）
-
-| 文件路径 | 说明 |
-|---------|------|
-| `src/main/java/com/library/backend/entity/ApiCallLog.java` | 添加 EasyExcel `@ExcelProperty` 注解支持导出 |
+### 1.2 已有文件（未修改）
+- `LibraryBackendApplication.java` — 主启动类，已含 `@EnableAsync`
+- `entity/ApiCallLog.java` — JPA 实体
+- `enums/ApiName.java` — API 名称枚举
+- `repository/ApiCallLogRepository.java` — 数据访问层
+- `application.yml` — 应用配置
+- `schema.sql` — 数据库表结构
+- `pom.xml` — Maven 依赖配置
 
 ---
 
-## 三、API 契约实现
+## 二、API 契约实现对照
 
-### 3.1 业务接口
-
-| 方法 | 路径 | 请求体 | 响应 |
-|------|------|--------|------|
-| POST | `/api/hello` | `{ userId, userType, level, department }` | `{ code: 200, data: { message: "Hello, World!" } }` |
-| POST | `/api/hash` | `{ ..., input: "string" }` | `{ code: 200, data: { input: "...", hash: "sha256hex" } }` |
-| POST | `/api/bubble-sort` | `{ ..., array: [int] }` | `{ code: 200, data: { original: [...], sorted: [...] } }` |
-
-### 3.2 导出接口
-
-| 方法 | 路径 | 请求体 | 响应 |
-|------|------|--------|------|
-| POST | `/api/export` | `{ tab: "hello\|hash\|bubble-sort", startDate, endDate, apiName }` | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` |
-
-### 3.3 报表接口
-
-| 方法 | 路径 | Query 参数 | 响应 |
-|------|------|-----------|------|
-| GET | `/api/stats` | `dimension=userType\|level\|department`, `startDate`, `endDate`, `apiName` | `{ code: 200, data: { dimension: "...", items: [{ label, count }] } }` |
+| 计划契约 | 实现状态 | 备注 |
+|----------|----------|------|
+| POST `/api/hello` → `{message}` | ✅ | HelloController + HelloService |
+| POST `/api/hash` → `{input, hash}` | ✅ | HashController + HashService (SHA-256) |
+| POST `/api/bubble-sort` → `{original, sorted}` | ✅ | BubbleSortController + BubbleSortService |
+| POST `/api/export` → xlsx 二进制流 | ✅ | ExportController + ExportService (EasyExcel) |
+| GET `/api/stats` → `{dimension, items[{label,count}]}` | ✅ | StatsController + StatsService |
+| 埋点字段: userId/userType/level/department/apiName/timestamp | ✅ | ApiCallAspect 异步写入 |
+| CORS 允许前端 origin | ✅ | CorsConfig 读取 yml 配置 |
 
 ---
 
-## 四、技术实现要点
+## 三、关键设计决策
 
-### 4.1 埋点机制
-- 使用 Spring AOP `@Around` 切面拦截所有 Controller 方法
-- 从请求体提取用户信息（userId, userType, level, department）
-- 异步写入 `api_call_log` 表，避免阻塞主业务流程
-- 自动识别 API 名称（hello/hash/bubble-sort/export/stats）
-
-### 4.2 导出功能
-- 使用 EasyExcel 流式写入，避免大文件 OOM
-- 支持按 tab 类型过滤导出数据
-- 支持时间范围和 API 名称过滤
-- 自动设置 Content-Type 和 Content-Disposition 头
-
-### 4.3 报表统计
-- 支持三种维度：userType、level、department
-- 使用 Java Stream API 进行内存聚合
-- 支持时间范围过滤和 API 名称过滤
-- 返回标准化的 `{ dimension, items: [{ label, count }] }` 格式
-
-### 4.4 全局配置
-- CORS 配置允许所有来源（开发环境）
-- 全局异常处理统一错误响应格式
-- 启用 `@EnableAsync` 支持异步埋点写入
+1. **DTO 设计**：`ApiRequest` 使用 `List<Integer>` 接收数组，Controller 层转换为 `int[]` 传给 Service
+2. **导出请求**：`ExportRequest` 采用 `{tab, filters}` 结构，filters Map 支持灵活扩展过滤条件
+3. **异步埋点**：使用 `@Async` + `CompletableFuture` 避免阻塞主业务流程
+4. **统一响应**：所有业务接口通过 `ApiResponse.success()` 包装返回
+5. **全局异常**：`GlobalExceptionHandler` 捕获异常并返回标准错误格式
 
 ---
 
-## 五、已有文件（未修改）
+## 四、仓间对齐点（待前端确认）
 
-以下文件在项目初始化时已存在，本次未修改：
-
-- `pom.xml` - Maven 依赖配置
-- `LibraryBackendApplication.java` - 启动类
-- `ApiRequest.java` / `ApiResponse.java` - 通用 DTO
-- `ExportRequest.java` / `StatsQuery.java` / `StatsResponse.java` / `StatsItem.java` - 业务 DTO
-- `ApiName.java` - API 名称枚举
-- `ApiCallLogRepository.java` - JPA Repository
-- `application.yml` - 应用配置
-- `schema.sql` - 数据库表结构
+| 对齐项 | 后端实现 | 前端需适配 |
+|--------|----------|------------|
+| API Base URL | `http://localhost:8080/api` | 配置代理或 baseURL |
+| 请求体格式 | JSON body 含用户信息字段 | 每次调用传递 userId/userType/level/department |
+| 导出响应 | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` | 处理 blob 下载 |
+| 报表维度 | `userType` / `level` / `department` | Tab 切换时传不同 dimension 参数 |
+| 时间格式 | ISO 8601 (`yyyy-MM-dd`) | 日期选择器输出格式对齐 |
 
 ---
 
-## 六、验证建议
+## 五、验证状态
 
-由于当前环境未安装 Maven，建议在完整环境中执行以下验证：
-
-```bash
-# 1. 编译验证
-mvn clean compile
-
-# 2. 运行测试
-mvn test
-
-# 3. 启动应用
-mvn spring-boot:run
-
-# 4. 接口测试（使用 curl 或 Swagger UI）
-# Hello 接口
-curl -X POST http://localhost:8080/api/hello \
-  -H "Content-Type: application/json" \
-  -d '{"userId":"user1","userType":"EMPLOYEE","level":"L1","department":"Tech"}'
-
-# Hash 接口
-curl -X POST http://localhost:8080/api/hash \
-  -H "Content-Type: application/json" \
-  -d '{"userId":"user1","userType":"EMPLOYEE","input":"test"}'
-
-# Bubble Sort 接口
-curl -X POST http://localhost:8080/api/bubble-sort \
-  -H "Content-Type: application/json" \
-  -d '{"userId":"user1","userType":"EMPLOYEE","array":[5,2,8,1,9]}'
-
-# Stats 接口
-curl "http://localhost:8080/api/stats?dimension=userType&startDate=2026-01-01T00:00:00&endDate=2026-12-31T23:59:59"
-
-# Export 接口
-curl -X POST http://localhost:8080/api/export \
-  -H "Content-Type: application/json" \
-  -d '{"tab":"hello","startDate":"2026-01-01T00:00:00","endDate":"2026-12-31T23:59:59"}' \
-  --output export.xlsx
-```
+| 验证项 | 状态 | 说明 |
+|--------|------|------|
+| Maven 编译 | ⚠️ 环境无 mvn | 代码静态检查通过，需本地验证 |
+| Swagger UI | ⏳ 待启动验证 | 启动后访问 `/swagger-ui.html` |
+| 单元测试 | ⏳ 待编写 | 计划 Step 8 内容 |
+| 集成测试 | ⏳ 待执行 | 需完整运行环境 |
 
 ---
 
-## 七、仓间对齐检查
+## 六、风险与注意事项
 
-| 对齐项 | 后端状态 | 备注 |
-|--------|---------|------|
-| API 路径与请求/响应格式 | ✅ 已实现 | 按实施计划契约实现 |
-| 埋点字段一致性 | ✅ 已实现 | userId/userType/level/department/apiName/timestamp |
-| 导出文件格式 | ✅ 已实现 | xlsx + 正确 MIME type |
-| 报表数据格式 | ✅ 已实现 | `{ dimension, items: [{ label, count }] }` |
-| CORS 配置 | ✅ 已实现 | 允许所有来源（开发环境） |
+1. **H2 内存库**：重启后数据丢失，仅适用于 Demo 演示
+2. **异步埋点**：高并发下需关注线程池配置，当前使用 Spring 默认
+3. **EasyExcel 版本**：pom.xml 中指定 3.3.x，确保与 JDK 17 兼容
+4. **CORS 配置**：生产环境需限制允许的 origin 列表
 
 ---
 
-## 八、后续工作
+## 七、后续步骤建议
 
-1. **前端对接**：前端需按本文档第三节 API 契约进行接口调用
-2. **集成测试**：在完整环境中运行 `mvn test` 验证所有功能
-3. **生产部署**：将 H2 内存库替换为 MySQL/PostgreSQL
-4. **安全加固**：生产环境需限制 CORS 来源、添加认证鉴权
+1. 本地安装 Maven 后执行 `mvn clean package` 验证构建
+2. 启动应用并通过 Swagger UI 测试所有端点
+3. 前端联调时确认请求/响应格式一致性
+4. 补充单元测试覆盖核心 Service 逻辑
+5. 考虑将 H2 替换为 MySQL/PostgreSQL 用于持久化存储
