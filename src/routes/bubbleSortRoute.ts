@@ -9,6 +9,12 @@ type BubbleSortResult = {
 };
 
 bubbleSortRoute.post("/bubble-sort", (req, res) => {
+  const contentType = req.headers["content-type"] ?? "";
+  if (!contentType.includes("application/json")) {
+    res.status(415).json(fail(415, "Content-Type must be application/json"));
+    return;
+  }
+
   const arr = req.body?.array;
 
   if (!Array.isArray(arr)) {
