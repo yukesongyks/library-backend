@@ -11,8 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.Instant;
 import java.util.Date;
 
 /**
@@ -53,9 +52,8 @@ public class TrackServiceImpl implements TrackService {
             entity.setUserType(user != null ? user.getUserType() : "");
             entity.setUserLevel(user != null ? user.getUserLevel() : "");
             entity.setDepartment(user != null ? user.getDepartment() : "");
-            // I004: 使用 java.time API 替代 new Date()
-            entity.setCallTime(Date.from(LocalDateTime.now()
-                    .atZone(ZoneId.systemDefault()).toInstant()));
+            // I004/M016: 使用 Instant.now()（UTC，无时区依赖），消除 LocalDateTime 默认时区隐患
+            entity.setCallTime(Date.from(Instant.now()));
 
             algoCallLogMapper.insert(entity);
         } catch (Exception e) {

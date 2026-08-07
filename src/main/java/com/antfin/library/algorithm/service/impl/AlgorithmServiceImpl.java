@@ -5,6 +5,7 @@ import com.antfin.library.algorithm.model.vo.HashResultVO;
 import com.antfin.library.algorithm.model.vo.HelloWorldVO;
 import com.antfin.library.algorithm.service.AlgorithmService;
 import com.antfin.library.common.enums.HashAlgorithmEnum;
+import com.antfin.library.common.exception.BusinessException;
 import com.antfin.library.common.util.UserContextUtil;
 import com.antfin.library.tracking.service.TrackService;
 import org.slf4j.Logger;
@@ -25,6 +26,9 @@ public class AlgorithmServiceImpl implements AlgorithmService {
     private static final Logger log = LoggerFactory.getLogger(AlgorithmServiceImpl.class);
 
     private static final String HELLO_WORLD_MESSAGE = "Hello, World! Welcome to Library Algorithm Demo.";
+
+    /** A05: 冒泡排序数组长度上限 */
+    private static final int BUBBLE_SORT_MAX_SIZE = 1000;
 
     private final TrackService trackService;
 
@@ -56,6 +60,15 @@ public class AlgorithmServiceImpl implements AlgorithmService {
 
     @Override
     public BubbleSortResultVO bubbleSort(List<Integer> numbers) {
+        // A05: 防御性校验数组长度上限 1000，与导出链路约束对齐
+        if (numbers == null || numbers.isEmpty()) {
+            throw new BusinessException("PARAM_ERROR", "待排序数组不能为空");
+        }
+        if (numbers.size() > BUBBLE_SORT_MAX_SIZE) {
+            throw new BusinessException("PARAM_ERROR",
+                    "数组长度不能超过" + BUBBLE_SORT_MAX_SIZE);
+        }
+
         trackService.trackAlgorithmCall("BUBBLE_SORT", getCurrentUserId());
 
         List<Integer> arr = new ArrayList<>(numbers);
