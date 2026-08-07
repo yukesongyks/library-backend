@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.antfin.library.tracking.dao.mapper.AlgoCallLogMapper">
+
+    <insert id="insert" parameterType="com.antfin.library.tracking.dao.entity.AlgoCallLogEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO algo_call_log (algorithm_type, user_id, user_type, user_level, department, call_time)
+        VALUES (#{algorithmType}, #{userId}, #{userType}, #{userLevel}, #{department}, #{callTime})
+    </insert>
+
+    <select id="selectDailyTrend" resultType="java.util.LinkedHashMap">
+        SELECT DATE(call_time) AS date, COUNT(*) AS count
+        FROM algo_call_log
+        WHERE call_time &gt;= #{startDate} AND call_time &lt;= #{endDate}
+        <if test="algorithmType != null and algorithmType != ''">
+            AND algorithm_type = #{algorithmType}
+        </if>
+        GROUP BY DATE(call_time)
+        ORDER BY date ASC
+    </select>
+
+    <select id="selectDimensionRatio" resultType="java.util.LinkedHashMap">
+        SELECT
+        <choose>
+            <when test="dimension == 'USER_TYPE'">user_type</when>
+            <when test="dimension == 'USER_LEVEL'">user_level</when>
+            <otherwise>department</otherwise>
+        </choose>
+            AS name, COUNT(*) AS value
+        FROM algo_call_log
+        WHERE call_time &gt;= #{startDate} AND call_time &lt;= #{endDate}
+        <if test="algorithmType != null and algorithmType != ''">
+            AND algorithm_type = #{algorithmType}
+        </if>
+        GROUP BY
+        <choose>
+            <when test="dimension == 'USER_TYPE'">user_type</when>
+            <when test="dimension == 'USER_LEVEL'">user_level</when>
+            <otherwise>department</otherwise>
+        </choose>
+        ORDER BY value DESC
+    </select>
+
+    <select id="selectDimensionComparison" resultType="java.util.LinkedHashMap">
+        SELECT algorithm_type AS algorithmType,
+        <choose>
+            <when test="dimension == 'USER_TYPE'">user_type</when>
+            <when test="dimension == 'USER_LEVEL'">user_level</when>
+            <otherwise>department</otherwise>
+        </choose>
+            AS name, COUNT(*) AS value
+        FROM algo_call_log
+        WHERE call_time &gt;= #{startDate} AND call_time &lt;= #{endDate}
+        GROUP BY algorithm_type,
+        <choose>
+            <when test="dimension == 'USER_TYPE'">user_type</when>
+            <when test="dimension == 'USER_LEVEL'">user_level</when>
+            <otherwise>department</otherwise>
+        </choose>
+        ORDER BY algorithm_type, value DESC
+    </select>
+
+    <select id="countTotalCall" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM algo_call_log
+        WHERE call_time &gt;= #{startDate} AND call_time &lt;= #{endDate}
+        <if test="algorithmType != null and algorithmType != ''">
+            AND algorithm_type = #{algorithmType}
+        </if>
+    </select>
+
+    <select id="countDistinctUser" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT user_id) FROM algo_call_log
+        WHERE call_time &gt;= #{startDate} AND call_time &lt;= #{endDate}
+        <if test="algorithmType != null and algorithmType != ''">
+            AND algorithm_type = #{algorithmType}
+        </if>
+    </select>
+
+</mapper>
