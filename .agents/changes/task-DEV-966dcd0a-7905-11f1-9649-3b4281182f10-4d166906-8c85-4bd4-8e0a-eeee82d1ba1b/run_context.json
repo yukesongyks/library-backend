@@ -1,0 +1,15 @@
+{
+  "task_id": "DEV-966dcd0a-7905-11f1-9649-3b4281182f10-4d166906-8c85-4bd4-8e0a-eeee82d1ba1b",
+  "stage": "test",
+  "node": "代码评审",
+  "blocker_count": 1,
+  "cr_report_path": ".agents/system.changes/cr_report.md",
+  "review_date": "2026-08-06",
+  "summary": {
+    "p0": 1,
+    "p1": 2,
+    "p2": 4,
+    "total": 7,
+    "verdict": "不通过"
+  }
+}
