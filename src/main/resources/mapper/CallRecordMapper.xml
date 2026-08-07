@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.library.track.mapper.CallRecordMapper">
+
+    <insert id="insert" parameterType="com.library.track.model.CallRecord" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO biz_call_record
+            (biz_type, caller_id, caller_name, caller_type, caller_level, caller_dept, cost_ms, result, gmt_create, gmt_modified)
+        VALUES
+            (#{bizType}, #{callerId}, #{callerName}, #{callerType}, #{callerLevel}, #{callerDept}, #{costMs}, #{result}, NOW(), NOW())
+    </insert>
+
+    <select id="aggregateByDimension" resultType="java.util.Map">
+        SELECT ${dimensionColumn} AS dim_value, COUNT(*) AS cnt
+        FROM biz_call_record
+        <where>
+            <if test="bizType != null and bizType != ''">
+                AND biz_type = #{bizType}
+            </if>
+            <if test="startDate != null and startDate != ''">
+                AND gmt_create &gt;= #{startDate}
+            </if>
+            <if test="endDate != null and endDate != ''">
+                AND gmt_create &lt; DATE_ADD(#{endDate}, INTERVAL 1 DAY)
+            </if>
+        </where>
+        GROUP BY ${dimensionColumn}
+        ORDER BY cnt DESC
+    </select>
+
+    <select id="aggregateByDimensionAndDate" resultType="java.util.Map">
+        SELECT ${dimensionColumn} AS dim_value, DATE_FORMAT(gmt_create, '%Y-%m-%d') AS call_date, COUNT(*) AS cnt
+        FROM biz_call_record
+        <where>
+            <if test="bizType != null and bizType != ''">
+                AND biz_type = #{bizType}
+            </if>
+            <if test="startDate != null and startDate != ''">
+                AND gmt_create &gt;= #{startDate}
+            </if>
+            <if test="endDate != null and endDate != ''">
+                AND gmt_create &lt; DATE_ADD(#{endDate}, INTERVAL 1 DAY)
+            </if>
+        </where>
+        GROUP BY ${dimensionColumn}, call_date
+        ORDER BY call_date ASC
+    </select>
+
+    <select id="countTotal" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM biz_call_record
+        <where>
+            <if test="bizType != null and bizType != ''">
+                AND biz_type = #{bizType}
+            </if>
+            <if test="startDate != null and startDate != ''">
+                AND gmt_create &gt;= #{startDate}
+            </if>
+            <if test="endDate != null and endDate != ''">
+                AND gmt_create &lt; DATE_ADD(#{endDate}, INTERVAL 1 DAY)
+            </if>
+        </where>
+    </select>
+
+</mapper>

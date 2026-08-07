@@ -1,0 +1,34 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/library?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  main:
+    allow-circular-references: false
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+demo:
+  track:
+    enabled: true
+  helloworld:
+    enabled: true
+  hash:
+    enabled: true
+  bubblesort:
+    enabled: true
+  statistics:
+    enabled: true
+
+logging:
+  level:
+    com.library: INFO
