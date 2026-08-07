@@ -8,13 +8,13 @@ import java.util.List;
 public interface CallLogRepository extends JpaRepository<CallLog, Long> {
 
     @Query(value = """
-        SELECT 'userType' AS dimension, c.user_type AS value, COUNT(*) AS cnt
+        SELECT 'userType' AS dimension, COALESCE(c.user_type, 'UNKNOWN') AS value, COUNT(*) AS cnt
         FROM call_log c GROUP BY c.user_type
         UNION ALL
-        SELECT 'userLevel', c.user_level, COUNT(*)
+        SELECT 'userLevel', COALESCE(c.user_level, 'UNKNOWN'), COUNT(*)
         FROM call_log c GROUP BY c.user_level
         UNION ALL
-        SELECT 'department', c.department, COUNT(*)
+        SELECT 'department', COALESCE(c.department, 'UNKNOWN'), COUNT(*)
         FROM call_log c GROUP BY c.department
         """, nativeQuery = true)
     List<Object[]> findAllByDimensions();

@@ -3,6 +3,7 @@ package com.library.service;
 import com.library.dto.AlgoResult;
 import org.springframework.stereotype.Service;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 @Service
@@ -30,6 +31,10 @@ public class AlgoService {
         return new AlgoResult("bubblesort", arr, sorted, duration);
     }
 
+    /**
+     * B1 修复：NoSuchAlgorithmException 对 SHA-256 不会发生（JRE 标准算法），
+     * 用 IllegalStateException 表示"不应发生"而非 RuntimeException。
+     */
     private String sha256(String base) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -39,16 +44,34 @@ public class AlgoService {
                 sb.append(String.format("%02x", b));
             }
             return sb.toString();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 算法不可用，JRE 环境异常", e);
         }
     }
 
+    /**
+     * B2 修复：非法输入抛出 IllegalArgumentException（Spring 自动映射为 400），
+     * 过滤空字符串元素。
+     */
     private List<Integer> parseInput(String input) {
+        if (input == null || input.isBlank()) {
+            throw new IllegalArgumentException("输入不能为空");
+        }
         String[] parts = input.split(",");
         List<Integer> arr = new ArrayList<>();
         for (String p : parts) {
-            arr.add(Integer.parseInt(p.trim()));
+            String trimmed = p.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            try {
+                arr.add(Integer.parseInt(trimmed));
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("非法数字: \"" + trimmed + "\"，请输入逗号分隔的整数");
+            }
+        }
+        if (arr.isEmpty()) {
+            throw new IllegalArgumentException("未解析到有效数字");
         }
         return arr;
     }

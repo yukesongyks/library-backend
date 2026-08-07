@@ -16,6 +16,8 @@ public class CallLog {
     private String userLevel;
     private String department;
     private LocalDateTime calledAt;
+    private Boolean success;
+    private String errorMsg;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -33,4 +35,8 @@ public class CallLog {
     public void setDepartment(String department) { this.department = department; }
     public LocalDateTime getCalledAt() { return calledAt; }
     public void setCalledAt(LocalDateTime calledAt) { this.calledAt = calledAt; }
+    public Boolean getSuccess() { return success; }
+    public void setSuccess(Boolean success) { this.success = success; }
+    public String getErrorMsg() { return errorMsg; }
+    public void setErrorMsg(String errorMsg) { this.errorMsg = errorMsg; }
 }
