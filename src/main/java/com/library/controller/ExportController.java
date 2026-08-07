@@ -80,6 +80,7 @@ public class ExportController {
     }
 
     private String csvRow(String apiName, Object input, Object output, long durationMs) {
-        return csvEscape(apiName) + "," + csvEscape(input) + "," + csvEscape(output) + "," + durationMs;
+        // P3-4: durationMs 统一走 csvEscape 保持一致性
+        return csvEscape(apiName) + "," + csvEscape(input) + "," + csvEscape(output) + "," + csvEscape(durationMs);
     }
 }

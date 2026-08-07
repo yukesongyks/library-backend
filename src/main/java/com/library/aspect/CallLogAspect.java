@@ -47,7 +47,8 @@ public class CallLogAspect {
         } finally {
             // B1: 业务异常后仍执行埋点，区分成功/失败状态
             try {
-                String apiName = pjp.getSignature().toShortString();
+                // P3-2: 使用 getName() 获取简单方法名（如 "helloworld"），而非 toShortString() 的签名格式
+                String apiName = pjp.getSignature().getName();
                 String callerId = resolveCallerId();
                 AppUser user = appUserRepository.findByUserId(callerId).orElse(null);
 

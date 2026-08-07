@@ -2,6 +2,7 @@ package com.library.service;
 
 import com.library.dto.AlgoResult;
 import org.springframework.stereotype.Service;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -38,7 +39,8 @@ public class AlgoService {
     private String sha256(String base) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] digest = md.digest(base.getBytes());
+            // P3-1: 显式指定 UTF-8 字符集，保证跨环境哈希结果一致
+            byte[] digest = md.digest(base.getBytes(StandardCharsets.UTF_8));
             StringBuilder sb = new StringBuilder();
             for (byte b : digest) {
                 sb.append(String.format("%02x", b));
