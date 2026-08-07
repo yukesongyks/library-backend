@@ -1,7 +1,7 @@
 -- 算法调用埋点表
 CREATE TABLE IF NOT EXISTS `algo_call_log` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
-    `algorithm_type` VARCHAR(32) NOT NULL COMMENT '算法类型: HELLO_WORLD/HASH/BUBBLE_SORT',
+    `algorithm_type` VARCHAR(32) NOT NULL COMMENT '算法类型: HELLO_WORLD/HASH/BUBBLE_SORT/EXPORT',
     `user_id` VARCHAR(64) NOT NULL COMMENT '调用用户ID',
     `user_type` VARCHAR(32) NOT NULL DEFAULT '' COMMENT '人员类型',
     `user_level` VARCHAR(32) NOT NULL DEFAULT '' COMMENT '人员层级',

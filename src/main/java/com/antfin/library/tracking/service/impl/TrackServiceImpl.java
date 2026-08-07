@@ -8,7 +8,6 @@ import com.antfin.library.usercenter.dao.entity.SysUserEntity;
 import com.antfin.library.usercenter.dao.mapper.SysUserMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -21,11 +20,14 @@ public class TrackServiceImpl implements TrackService {
 
     private static final Logger log = LoggerFactory.getLogger(TrackServiceImpl.class);
 
-    @Autowired
-    private AlgoCallLogMapper algoCallLogMapper;
+    private final AlgoCallLogMapper algoCallLogMapper;
 
-    @Autowired
-    private SysUserMapper sysUserMapper;
+    private final SysUserMapper sysUserMapper;
+
+    public TrackServiceImpl(AlgoCallLogMapper algoCallLogMapper, SysUserMapper sysUserMapper) {
+        this.algoCallLogMapper = algoCallLogMapper;
+        this.sysUserMapper = sysUserMapper;
+    }
 
     @Override
     public void trackAlgorithmCall(String algorithmType, String userId) {

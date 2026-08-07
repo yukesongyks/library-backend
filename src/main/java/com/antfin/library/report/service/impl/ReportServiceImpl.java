@@ -8,7 +8,6 @@ import com.antfin.library.report.service.ReportService;
 import com.antfin.library.tracking.dao.mapper.AlgoCallLogMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.text.ParseException;
@@ -29,8 +28,11 @@ public class ReportServiceImpl implements ReportService {
     private static final String DATE_PATTERN = "yyyy-MM-dd";
     private static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
-    @Autowired
-    private AlgoCallLogMapper algoCallLogMapper;
+    private final AlgoCallLogMapper algoCallLogMapper;
+
+    public ReportServiceImpl(AlgoCallLogMapper algoCallLogMapper) {
+        this.algoCallLogMapper = algoCallLogMapper;
+    }
 
     @Override
     public AlgoCallStatsVO queryCallStats(ReportRequest request) {

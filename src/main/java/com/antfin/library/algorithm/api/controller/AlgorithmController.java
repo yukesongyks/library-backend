@@ -7,7 +7,6 @@ import com.antfin.library.algorithm.model.vo.HashResultVO;
 import com.antfin.library.algorithm.model.vo.HelloWorldVO;
 import com.antfin.library.algorithm.service.AlgorithmService;
 import com.antfin.library.common.model.Result;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,8 +22,11 @@ import javax.validation.Valid;
 @RequestMapping("/api/algorithm")
 public class AlgorithmController {
 
-    @Autowired
-    private AlgorithmService algorithmService;
+    private final AlgorithmService algorithmService;
+
+    public AlgorithmController(AlgorithmService algorithmService) {
+        this.algorithmService = algorithmService;
+    }
 
     /**
      * W01 HelloWorld

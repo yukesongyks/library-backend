@@ -7,7 +7,8 @@ public enum AlgorithmTypeEnum {
 
     HELLO_WORLD("HELLO_WORLD", "HelloWorld"),
     HASH("HASH", "哈希算法"),
-    BUBBLE_SORT("BUBBLE_SORT", "冒泡排序");
+    BUBBLE_SORT("BUBBLE_SORT", "冒泡排序"),
+    EXPORT("EXPORT", "结果导出");
 
     private final String code;
     private final String desc;

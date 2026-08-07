@@ -10,14 +10,12 @@ import com.antfin.library.export.service.ExportService;
 import com.antfin.library.tracking.service.TrackService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,11 +30,14 @@ public class ExportServiceImpl implements ExportService {
 
     private static final int MAX_ROWS = 10000;
 
-    @Autowired
-    private AlgorithmService algorithmService;
+    private final AlgorithmService algorithmService;
 
-    @Autowired
-    private TrackService trackService;
+    private final TrackService trackService;
+
+    public ExportServiceImpl(AlgorithmService algorithmService, TrackService trackService) {
+        this.algorithmService = algorithmService;
+        this.trackService = trackService;
+    }
 
     @Override
     public void exportAlgorithmResult(String algorithmType, String numbers, String inputText,
@@ -130,7 +131,6 @@ public class ExportServiceImpl implements ExportService {
         try {
             String encodedFileName = URLEncoder.encode(fileName, "UTF-8").replaceAll("\\+", "%20");
             response.setHeader("Content-Disposition", "attachment;filename=" + encodedFileName);
-            response.setHeader("Content-Type", "text/csv;charset=UTF-8");
 
             // 写入 BOM 以兼容 Excel
             PrintWriter writer = response.getWriter();

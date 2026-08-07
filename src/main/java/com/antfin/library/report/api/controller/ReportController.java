@@ -4,7 +4,6 @@ import com.antfin.library.common.model.Result;
 import com.antfin.library.report.model.request.ReportRequest;
 import com.antfin.library.report.model.vo.AlgoCallStatsVO;
 import com.antfin.library.report.service.ReportService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,8 +18,11 @@ import javax.validation.Valid;
 @RequestMapping("/api/report")
 public class ReportController {
 
-    @Autowired
-    private ReportService reportService;
+    private final ReportService reportService;
+
+    public ReportController(ReportService reportService) {
+        this.reportService = reportService;
+    }
 
     /**
      * W05 算法调用统计报表查询

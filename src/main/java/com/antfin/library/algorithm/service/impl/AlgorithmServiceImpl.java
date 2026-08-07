@@ -8,7 +8,6 @@ import com.antfin.library.common.enums.HashAlgorithmEnum;
 import com.antfin.library.tracking.service.TrackService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -26,8 +25,11 @@ public class AlgorithmServiceImpl implements AlgorithmService {
 
     private static final String HELLO_WORLD_MESSAGE = "Hello, World! Welcome to Library Algorithm Demo.";
 
-    @Autowired
-    private TrackService trackService;
+    private final TrackService trackService;
+
+    public AlgorithmServiceImpl(TrackService trackService) {
+        this.trackService = trackService;
+    }
 
     @Override
     public HelloWorldVO helloWorld() {
