@@ -5,6 +5,7 @@ import com.antfin.library.algorithm.model.vo.HashResultVO;
 import com.antfin.library.algorithm.model.vo.HelloWorldVO;
 import com.antfin.library.algorithm.service.AlgorithmService;
 import com.antfin.library.common.enums.HashAlgorithmEnum;
+import com.antfin.library.common.util.UserContextUtil;
 import com.antfin.library.tracking.service.TrackService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,11 +99,9 @@ public class AlgorithmServiceImpl implements AlgorithmService {
     }
 
     /**
-     * 获取当前用户ID（简化实现，实际从上下文获取）
+     * 获取当前用户ID（从请求头 X-User-Id 获取）
      */
     private String getCurrentUserId() {
-        // 简化实现：从请求头或上下文获取，此处使用默认值
-        // 实际项目中应从 SecurityContext 或 Session 获取
-        return "demo-user";
+        return UserContextUtil.getCurrentUserId();
     }
 }

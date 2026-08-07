@@ -10,12 +10,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 报表服务实现
@@ -25,10 +30,19 @@ public class ReportServiceImpl implements ReportService {
 
     private static final Logger log = LoggerFactory.getLogger(ReportServiceImpl.class);
 
-    private static final String DATE_PATTERN = "yyyy-MM-dd";
-    private static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    /**
+     * 缓存 TTL（5 分钟）
+     */
+    private static final long CACHE_TTL_MILLIS = 5 * 60 * 1000L;
 
     private final AlgoCallLogMapper algoCallLogMapper;
+
+    /**
+     * 报表查询缓存：key = algorithmType|dimension|startDate|endDate
+     */
+    private final ConcurrentHashMap<String, CacheEntry> cache = new ConcurrentHashMap<>();
 
     public ReportServiceImpl(AlgoCallLogMapper algoCallLogMapper) {
         this.algoCallLogMapper = algoCallLogMapper;
@@ -38,8 +52,9 @@ public class ReportServiceImpl implements ReportService {
     public AlgoCallStatsVO queryCallStats(ReportRequest request) {
         // 校验维度
         if (!DimensionEnum.isValid(request.getDimension())) {
-            throw new BusinessException("PARAM_ERROR", "无效的聚合维度: " + request.getDimension() +
-                    "，可选值: USER_TYPE / USER_LEVEL / DEPARTMENT");
+            throw new BusinessException("PARAM_ERROR",
+                    "无效的聚合维度: " + request.getDimension()
+                            + "，可选值: USER_TYPE / USER_LEVEL / DEPARTMENT");
         }
 
         // 解析日期
@@ -52,10 +67,36 @@ public class ReportServiceImpl implements ReportService {
         String algorithmType = request.getAlgorithmType();
         String dimension = request.getDimension();
 
+        // 缓存查询
+        String cacheKey = algorithmType + "|" + dimension + "|"
+                + request.getStartDate() + "|" + request.getEndDate();
+        CacheEntry cached = cache.get(cacheKey);
+        if (cached != null && (System.currentTimeMillis() - cached.timestamp) < CACHE_TTL_MILLIS) {
+            log.info("报表命中缓存: dimension={}, algorithmType={}", dimension, algorithmType);
+            return cached.value;
+        }
+
+        AlgoCallStatsVO vo = doQuery(algorithmType, dimension, startDate, endDate);
+
+        // 写入缓存
+        cache.put(cacheKey, new CacheEntry(vo, System.currentTimeMillis()));
+
+        log.info("报表查询完成: dimension={}, algorithmType={}, totalCallCount={}",
+                dimension, algorithmType, vo.getTotalCallCount());
+
+        return vo;
+    }
+
+    /**
+     * 执行实际 DB 查询
+     */
+    private AlgoCallStatsVO doQuery(String algorithmType, String dimension,
+                                   Date startDate, Date endDate) {
         AlgoCallStatsVO vo = new AlgoCallStatsVO();
 
         // 1. 按日趋势
-        List<Map<String, Object>> trendRows = algoCallLogMapper.selectDailyTrend(algorithmType, startDate, endDate);
+        List<Map<String, Object>> trendRows =
+                algoCallLogMapper.selectDailyTrend(algorithmType, startDate, endDate);
         List<AlgoCallStatsVO.TrendItem> trendList = new ArrayList<>();
         for (Map<String, Object> row : trendRows) {
             String date = String.valueOf(row.get("date"));
@@ -65,7 +106,9 @@ public class ReportServiceImpl implements ReportService {
         vo.setTrendList(trendList);
 
         // 2. 维度占比（饼图）
-        List<Map<String, Object>> ratioRows = algoCallLogMapper.selectDimensionRatio(algorithmType, dimension, startDate, endDate);
+        List<Map<String, Object>> ratioRows =
+                algoCallLogMapper.selectDimensionRatio(
+                        algorithmType, dimension, startDate, endDate);
         List<AlgoCallStatsVO.DimensionItem> ratioList = new ArrayList<>();
         for (Map<String, Object> row : ratioRows) {
             String name = String.valueOf(row.get("name"));
@@ -75,7 +118,8 @@ public class ReportServiceImpl implements ReportService {
         vo.setDimensionRatioList(ratioList);
 
         // 3. 维度对比（柱状图）
-        List<Map<String, Object>> comparisonRows = algoCallLogMapper.selectDimensionComparison(dimension, startDate, endDate);
+        List<Map<String, Object>> comparisonRows =
+                algoCallLogMapper.selectDimensionComparison(dimension, startDate, endDate);
         List<AlgoCallStatsVO.DimensionItem> comparisonList = new ArrayList<>();
         for (Map<String, Object> row : comparisonRows) {
             String name = String.valueOf(row.get("name"));
@@ -90,10 +134,9 @@ public class ReportServiceImpl implements ReportService {
         vo.setTotalCallCount(totalCall != null ? totalCall : 0L);
 
         // 5. 去重用户数
-        Long distinctUser = algoCallLogMapper.countDistinctUser(algorithmType, startDate, endDate);
+        Long distinctUser =
+                algoCallLogMapper.countDistinctUser(algorithmType, startDate, endDate);
         vo.setDistinctUserCount(distinctUser != null ? distinctUser : 0L);
-
-        log.info("报表查询完成: dimension={}, algorithmType={}, totalCallCount={}", dimension, algorithmType, vo.getTotalCallCount());
 
         return vo;
     }
@@ -103,10 +146,14 @@ public class ReportServiceImpl implements ReportService {
      */
     private Date parseStartDate(String dateStr) {
         try {
-            SimpleDateFormat sdf = new SimpleDateFormat(DATE_TIME_PATTERN);
-            return sdf.parse(dateStr + " 00:00:00");
-        } catch (ParseException e) {
-            throw new BusinessException("PARAM_ERROR", "日期格式错误，应为 yyyy-MM-dd: " + dateStr);
+            LocalDate ld = LocalDate.parse(dateStr, DATE_FORMATTER);
+            LocalDateTime ldt = LocalDateTime.of(ld, LocalTime.MIN);
+            return Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
+        } catch (DateTimeParseException e) {
+            // G16.2: 捕获异常后先记录日志再抛出
+            log.warn("开始日期格式错误，应为 yyyy-MM-dd: {}", dateStr);
+            throw new BusinessException("PARAM_ERROR",
+                    "日期格式错误，应为 yyyy-MM-dd: " + dateStr);
         }
     }
 
@@ -115,10 +162,14 @@ public class ReportServiceImpl implements ReportService {
      */
     private Date parseEndDate(String dateStr) {
         try {
-            SimpleDateFormat sdf = new SimpleDateFormat(DATE_TIME_PATTERN);
-            return sdf.parse(dateStr + " 23:59:59");
-        } catch (ParseException e) {
-            throw new BusinessException("PARAM_ERROR", "日期格式错误，应为 yyyy-MM-dd: " + dateStr);
+            LocalDate ld = LocalDate.parse(dateStr, DATE_FORMATTER);
+            LocalDateTime ldt = LocalDateTime.of(ld, LocalTime.MAX);
+            return Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant());
+        } catch (DateTimeParseException e) {
+            // G16.2: 捕获异常后先记录日志再抛出
+            log.warn("结束日期格式错误，应为 yyyy-MM-dd: {}", dateStr);
+            throw new BusinessException("PARAM_ERROR",
+                    "日期格式错误，应为 yyyy-MM-dd: " + dateStr);
         }
     }
 
@@ -133,5 +184,18 @@ public class ReportServiceImpl implements ReportService {
             return ((Number) value).longValue();
         }
         return Long.parseLong(String.valueOf(value));
+    }
+
+    /**
+     * 缓存条目
+     */
+    private static class CacheEntry {
+        final AlgoCallStatsVO value;
+        final long timestamp;
+
+        CacheEntry(AlgoCallStatsVO value, long timestamp) {
+            this.value = value;
+            this.timestamp = timestamp;
+        }
     }
 }

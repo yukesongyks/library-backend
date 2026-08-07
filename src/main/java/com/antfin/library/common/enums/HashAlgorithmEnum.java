@@ -1,5 +1,8 @@
 package com.antfin.library.common.enums;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -49,10 +52,14 @@ public enum HashAlgorithmEnum {
         return e != null ? e : SHA256;
     }
 
+    private static final Logger log = LoggerFactory.getLogger(HashAlgorithmEnum.class);
+
     public MessageDigest newMessageDigest() {
         try {
             return MessageDigest.getInstance(getJceName());
         } catch (NoSuchAlgorithmException ex) {
+            // G16.2: 捕获异常后先记录日志再抛出
+            log.error("不支持的哈希算法: {}", getJceName(), ex);
             throw new IllegalStateException("不支持的哈希算法: " + getJceName(), ex);
         }
     }

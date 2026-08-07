@@ -6,22 +6,27 @@ import com.antfin.library.algorithm.model.vo.HelloWorldVO;
 import com.antfin.library.algorithm.service.AlgorithmService;
 import com.antfin.library.common.enums.AlgorithmTypeEnum;
 import com.antfin.library.common.exception.BusinessException;
+import com.antfin.library.common.util.UserContextUtil;
 import com.antfin.library.export.service.ExportService;
 import com.antfin.library.tracking.service.TrackService;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 导出服务实现
+ * 导出服务实现（Excel .xlsx 格式）
  */
 @Service
 public class ExportServiceImpl implements ExportService {
@@ -47,45 +52,70 @@ public class ExportServiceImpl implements ExportService {
             throw new BusinessException("PARAM_ERROR", "无效的算法类型: " + algorithmType);
         }
 
-        String fileName = "algorithm-result-" + typeEnum.getCode().toLowerCase() + ".csv";
-        StringBuilder csv = new StringBuilder();
+        String fileName = "algorithm-result-" + typeEnum.getCode().toLowerCase() + ".xlsx";
 
-        switch (typeEnum) {
-            case HELLO_WORLD:
-                HelloWorldVO hw = algorithmService.helloWorld();
-                csv.append("字段,值\n");
-                csv.append("message,").append(escapeCsv(hw.getMessage())).append("\n");
-                fileName = "helloworld-result.csv";
-                break;
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("算法结果");
 
-            case HASH:
-                String text = inputText != null ? inputText : "";
-                String algo = algorithm != null ? algorithm : "SHA-256";
-                HashResultVO hashResult = algorithmService.hash(text, algo);
-                csv.append("字段,值\n");
-                csv.append("hashHex,").append(escapeCsv(hashResult.getHashHex())).append("\n");
-                csv.append("inputLength,").append(hashResult.getInputLength()).append("\n");
-                fileName = "hash-result.csv";
-                break;
+            switch (typeEnum) {
+                case HELLO_WORLD:
+                    HelloWorldVO hw = algorithmService.helloWorld();
+                    buildKeyValueSheet(sheet, new String[][]{
+                            {"message", hw.getMessage()}
+                    });
+                    fileName = "helloworld-result.xlsx";
+                    break;
 
-            case BUBBLE_SORT:
-                List<Integer> numberList = parseNumbers(numbers);
-                BubbleSortResultVO sortResult = algorithmService.bubbleSort(numberList);
-                csv.append("字段,值\n");
-                csv.append("sortedArray,").append(escapeCsv(sortResult.getSortedArray().toString())).append("\n");
-                csv.append("compareCount,").append(sortResult.getCompareCount()).append("\n");
-                csv.append("swapCount,").append(sortResult.getSwapCount()).append("\n");
-                csv.append("durationMillis,").append(sortResult.getDurationMillis()).append("\n");
-                fileName = "bubble-sort-result.csv";
-                break;
+                case HASH:
+                    String text = inputText != null ? inputText : "";
+                    String algo = algorithm != null ? algorithm : "SHA-256";
+                    HashResultVO hashResult = algorithmService.hash(text, algo);
+                    buildKeyValueSheet(sheet, new String[][]{
+                            {"hashHex", hashResult.getHashHex()},
+                            {"inputLength", String.valueOf(hashResult.getInputLength())}
+                    });
+                    fileName = "hash-result.xlsx";
+                    break;
 
-            default:
-                throw new BusinessException("PARAM_ERROR", "不支持的算法类型: " + algorithmType);
+                case BUBBLE_SORT:
+                    List<Integer> numberList = parseNumbers(numbers);
+                    BubbleSortResultVO sortResult = algorithmService.bubbleSort(numberList);
+                    buildKeyValueSheet(sheet, new String[][]{
+                            {"sortedArray", sortResult.getSortedArray().toString()},
+                            {"compareCount", String.valueOf(sortResult.getCompareCount())},
+                            {"swapCount", String.valueOf(sortResult.getSwapCount())},
+                            {"durationMillis", String.valueOf(sortResult.getDurationMillis())}
+                    });
+                    fileName = "bubble-sort-result.xlsx";
+                    break;
+
+                default:
+                    throw new BusinessException("PARAM_ERROR", "不支持的算法类型: " + algorithmType);
+            }
+
+            trackService.trackAlgorithmCall("EXPORT", getCurrentUserId());
+
+            writeExcelResponse(response, fileName, workbook);
+        } catch (IOException e) {
+            log.error("导出Excel失败", e);
+            throw new BusinessException("EXPORT_ERROR", "导出失败: " + e.getMessage());
         }
+    }
 
-        trackService.trackAlgorithmCall("EXPORT", getCurrentUserId());
-
-        writeCsvResponse(response, fileName, csv.toString());
+    /**
+     * 构建"字段,值"两列表格
+     */
+    private void buildKeyValueSheet(Sheet sheet, String[][] rows) {
+        Row header = sheet.createRow(0);
+        header.createCell(0).setCellValue("字段");
+        header.createCell(1).setCellValue("值");
+        for (int i = 0; i < rows.length; i++) {
+            Row row = sheet.createRow(i + 1);
+            row.createCell(0).setCellValue(rows[i][0]);
+            row.createCell(1).setCellValue(rows[i][1]);
+        }
+        sheet.autoSizeColumn(0);
+        sheet.autoSizeColumn(1);
     }
 
     /**
@@ -105,45 +135,29 @@ public class ExportServiceImpl implements ExportService {
                     .map(Integer::parseInt)
                     .collect(Collectors.toList());
         } catch (NumberFormatException e) {
+            // G16.2: 捕获异常后先记录日志再抛出
+            log.warn("数字格式错误: {}", e.getMessage());
             throw new BusinessException("PARAM_ERROR", "数字格式错误: " + e.getMessage());
         }
     }
 
     /**
-     * CSV 字段转义
+     * 写出 Excel 响应
      */
-    private String escapeCsv(String value) {
-        if (value == null) {
-            return "";
-        }
-        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
-            return "\"" + value.replace("\"", "\"\"") + "\"";
-        }
-        return value;
-    }
-
-    /**
-     * 写出 CSV 响应
-     */
-    private void writeCsvResponse(HttpServletResponse response, String fileName, String content) {
-        response.setContentType("text/csv;charset=UTF-8");
+    private void writeExcelResponse(HttpServletResponse response, String fileName, Workbook workbook)
+            throws IOException {
+        response.setContentType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8");
         response.setCharacterEncoding("UTF-8");
-        try {
-            String encodedFileName = URLEncoder.encode(fileName, "UTF-8").replaceAll("\\+", "%20");
-            response.setHeader("Content-Disposition", "attachment;filename=" + encodedFileName);
-
-            // 写入 BOM 以兼容 Excel
-            PrintWriter writer = response.getWriter();
-            writer.write("\uFEFF");
-            writer.write(content);
-            writer.flush();
-        } catch (IOException e) {
-            log.error("导出CSV失败", e);
-            throw new BusinessException("EXPORT_ERROR", "导出失败: " + e.getMessage());
+        String encodedFileName = URLEncoder.encode(fileName, "UTF-8").replaceAll("\\+", "%20");
+        response.setHeader("Content-Disposition", "attachment;filename=" + encodedFileName);
+        try (OutputStream out = response.getOutputStream()) {
+            workbook.write(out);
+            out.flush();
         }
     }
 
     private String getCurrentUserId() {
-        return "demo-user";
+        return UserContextUtil.getCurrentUserId();
     }
 }
