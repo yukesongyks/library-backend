@@ -7,20 +7,29 @@ import com.library.demo.model.HashResult;
 import com.library.demo.model.SortRequest;
 import com.library.demo.model.SortResult;
 import com.library.demo.service.DemoService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
+/**
+ * DemoService 单元测试
+ * 采用纯单元测试（不依赖 Spring 容器与数据库），与系分"三接口为无状态纯计算"语义一致，
+ * 遵循测试金字塔：纯计算逻辑用快速单元测试覆盖，不引入 @SpringBootTest 重型上下文。
+ */
 class DemoServiceTest {
 
-    @Autowired
     private DemoService demoService;
+
+    @BeforeEach
+    void setUp() {
+        demoService = new DemoService();
+    }
 
     @Test
     void testHelloworld() {
@@ -78,7 +87,7 @@ class DemoServiceTest {
     @Test
     void testBubbleSortEmpty() {
         SortRequest req = new SortRequest();
-        req.setNumbers(List.of());
+        req.setNumbers(Collections.emptyList());
         BizException ex = assertThrows(BizException.class, () -> demoService.bubbleSort(req));
         assertEquals("DEMO_004", ex.getCode());
     }
@@ -86,7 +95,7 @@ class DemoServiceTest {
     @Test
     void testBubbleSortTooLarge() {
         SortRequest req = new SortRequest();
-        List<Integer> nums = new java.util.ArrayList<>();
+        List<Integer> nums = new ArrayList<>();
         for (int i = 0; i < 1001; i++) {
             nums.add(i);
         }
