@@ -1,0 +1,16 @@
+{
+  "name": "hello-hash",
+  "version": "1.0.0",
+  "description": "Hello World and Hash Functions",
+  "main": "src/hello.ts",
+  "scripts": {
+    "start:hello": "ts-node src/hello.ts",
+    "start:hash": "ts-node src/hash.ts",
+    "start:custom": "ts-node src/customHash.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2",
+    "@types/node": "^20.11.0"
+  }
+}
