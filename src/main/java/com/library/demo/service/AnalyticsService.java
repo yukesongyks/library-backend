@@ -12,8 +12,14 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.time.temporal.WeekFields;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,9 +28,12 @@ public class AnalyticsService {
 
     private final DemoCallLogMapper callLogMapper;
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final ZoneId ZONE_SHANGHAI = ZoneId.of("Asia/Shanghai");
+    private static final int MAX_QUERY_LIMIT = 50000;
 
     public AnalyticsSummary getSummary(AnalyticsQuery query) {
         LambdaQueryWrapper<DemoCallLog> wrapper = buildBaseQuery(query);
+        wrapper.last("LIMIT " + MAX_QUERY_LIMIT);
 
         List<DemoCallLog> logs = callLogMapper.selectList(wrapper);
 
@@ -71,8 +80,8 @@ public class AnalyticsService {
         summary.setItems(items);
         summary.setTotalCount(totalCount);
         summary.setDateRange(new AnalyticsSummary.DateRange(
-                query.getStartDate() != null ? query.getStartDate() : LocalDate.now().minusMonths(1).format(DATE_FMT),
-                query.getEndDate() != null ? query.getEndDate() : LocalDate.now().format(DATE_FMT)
+                query.getStartDate() != null ? query.getStartDate() : LocalDate.now(ZONE_SHANGHAI).minusMonths(1).format(DATE_FMT),
+                query.getEndDate() != null ? query.getEndDate() : LocalDate.now(ZONE_SHANGHAI).format(DATE_FMT)
         ));
 
         return summary;
@@ -80,16 +89,17 @@ public class AnalyticsService {
 
     public AnalyticsTrend getTrend(AnalyticsQuery query) {
         LambdaQueryWrapper<DemoCallLog> wrapper = buildBaseQuery(query);
+        wrapper.last("LIMIT " + MAX_QUERY_LIMIT);
         List<DemoCallLog> logs = callLogMapper.selectList(wrapper);
 
         String granularity = query.getGranularity() != null ? query.getGranularity() : "DAY";
 
-        // Group by apiType then by date
+        // Group by apiType then by time bucket based on granularity
         Map<String, Map<String, Long>> byApiAndDate = logs.stream()
                 .collect(Collectors.groupingBy(
                         DemoCallLog::getApiType,
                         Collectors.groupingBy(
-                                l -> l.getCallTime().toLocalDate().format(DATE_FMT),
+                                l -> formatTimeBucket(l.getCallTime().toLocalDate(), granularity),
                                 Collectors.counting()
                         )
                 ));
@@ -108,6 +118,28 @@ public class AnalyticsService {
         trend.setGranularity(granularity);
         trend.setSeries(seriesList);
         return trend;
+    }
+
+    /**
+     * 根据粒度格式化日期为对应的时间桶标签。
+     *
+     * @param date        日期
+     * @param granularity 粒度：DAY / WEEK / MONTH
+     * @return 时间桶标签字符串
+     */
+    private String formatTimeBucket(LocalDate date, String granularity) {
+        switch (granularity) {
+            case "WEEK":
+                WeekFields weekFields = WeekFields.of(Locale.getDefault());
+                int weekNumber = date.get(weekFields.weekOfWeekBasedYear());
+                int year = date.get(weekFields.weekBasedYear());
+                return year + "-W" + String.format("%02d", weekNumber);
+            case "MONTH":
+                return date.format(DateTimeFormatter.ofPattern("yyyy-MM"));
+            case "DAY":
+            default:
+                return date.format(DATE_FMT);
+        }
     }
 
     private LambdaQueryWrapper<DemoCallLog> buildBaseQuery(AnalyticsQuery query) {

@@ -3,6 +3,7 @@ package com.library.demo.service;
 import com.library.demo.dto.request.HashRequest;
 import com.library.demo.dto.response.HashResult;
 import com.library.demo.enums.HashAlgorithm;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -11,6 +12,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 
 @Service
+@Slf4j
 public class HashService {
 
     public HashResult hash(HashRequest request) {
@@ -42,7 +44,8 @@ public class HashService {
             }
             return sb.toString();
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Unsupported algorithm: " + algorithm, e);
+            log.error("Unsupported hash algorithm: {}", algorithm, e);
+            throw new IllegalStateException("Unsupported hash algorithm: " + algorithm, e);
         }
     }
 }
