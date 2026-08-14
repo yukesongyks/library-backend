@@ -11,9 +11,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import jakarta.annotation.PreDestroy;
 import java.time.LocalDateTime;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 @Aspect
 @Component
@@ -78,6 +80,19 @@ public class MetricsAspect {
         String methodName = joinPoint.getSignature().getName();
         return "/api/" + className.substring(className.lastIndexOf('.') + 1).replace("Controller", "").toLowerCase()
                 + "/" + methodName;
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 
     private String getHeader(HttpServletRequest req, String name, String defaultVal) {

@@ -15,6 +15,12 @@ public class BubbleSortRequest {
     private static final Set<String> VALID_ORDERS = Set.of("asc", "desc");
 
     public void validate() {
+        if (array == null || array.length < 2) {
+            throw new IllegalArgumentException("数组长度至少为2");
+        }
+        if (array.length > 1000) {
+            throw new IllegalArgumentException("数组长度不能超过1000");
+        }
         if (!VALID_ORDERS.contains(order)) {
             throw new IllegalArgumentException("排序方向仅支持 asc 或 desc");
         }

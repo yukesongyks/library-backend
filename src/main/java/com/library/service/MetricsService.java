@@ -3,11 +3,20 @@ package com.library.service;
 import com.library.mapper.ApiMetricsMapper;
 import org.springframework.stereotype.Service;
 import java.util.*;
+import java.util.regex.Pattern;
 
 @Service
 public class MetricsService {
 
     private static final Set<String> VALID_DIMENSIONS = Set.of("caller_type", "caller_level", "caller_dept");
+    private static final Set<String> VALID_API_PATHS = Set.of(
+            "/api/helloworld/helloworld",
+            "/api/hash/compute",
+            "/api/bubblesort/sort",
+            "/api/export/export"
+    );
+    private static final Pattern DATE_PATTERN = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}$");
+
     private final ApiMetricsMapper apiMetricsMapper;
 
     public MetricsService(ApiMetricsMapper apiMetricsMapper) {
@@ -17,21 +26,14 @@ public class MetricsService {
     public Map<String, Object> query(String dimension, String startDate, String endDate, String apiPath) {
         String dim = (dimension != null && VALID_DIMENSIONS.contains(dimension)) ? dimension : "caller_type";
 
-        StringBuilder where = new StringBuilder();
-        if (startDate != null && !startDate.isEmpty()) {
-            where.append(" AND call_time >= '").append(startDate).append(" 00:00:00'");
-        }
-        if (endDate != null && !endDate.isEmpty()) {
-            where.append(" AND call_time <= '").append(endDate).append(" 23:59:59'");
-        }
-        if (apiPath != null && !apiPath.isEmpty()) {
-            where.append(" AND api_path = '").append(apiPath).append("'");
-        }
-        String whereCondition = where.toString();
+        // 参数化绑定：日期格式校验 + apiPath 白名单校验
+        String safeStartDate = validateDate(startDate);
+        String safeEndDate = validateDate(endDate);
+        String safeApiPath = validateApiPath(apiPath);
 
-        Long total = apiMetricsMapper.selectTotalCount(whereCondition);
-        List<Map<String, Object>> breakdown = apiMetricsMapper.selectStatsByDimension(dim, whereCondition);
-        List<Map<String, Object>> trend = apiMetricsMapper.selectTrend(whereCondition);
+        Long total = apiMetricsMapper.selectTotalCount(safeStartDate, safeEndDate, safeApiPath);
+        List<Map<String, Object>> breakdown = apiMetricsMapper.selectStatsByDimension(dim, safeStartDate, safeEndDate, safeApiPath);
+        List<Map<String, Object>> trend = apiMetricsMapper.selectTrend(safeStartDate, safeEndDate, safeApiPath);
 
         Map<String, Object> result = new HashMap<>();
         result.put("dimension", dim);
@@ -39,5 +41,21 @@ public class MetricsService {
         result.put("breakdown", breakdown != null ? breakdown : Collections.emptyList());
         result.put("trend", trend != null ? trend : Collections.emptyList());
         return result;
+    }
+
+    private String validateDate(String date) {
+        if (date == null || date.isEmpty()) return null;
+        if (!DATE_PATTERN.matcher(date).matches()) {
+            throw new IllegalArgumentException("日期格式无效，需为 yyyy-MM-dd: " + date);
+        }
+        return date;
+    }
+
+    private String validateApiPath(String apiPath) {
+        if (apiPath == null || apiPath.isEmpty()) return null;
+        if (!VALID_API_PATHS.contains(apiPath)) {
+            throw new IllegalArgumentException("无效的 apiPath: " + apiPath);
+        }
+        return apiPath;
     }
 }

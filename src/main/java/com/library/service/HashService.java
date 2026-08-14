@@ -9,9 +9,8 @@ import java.util.HexFormat;
 public class HashService {
 
     public String compute(String input, String algorithm) {
-        String javaAlgo = algorithm.replace("-", "-");
         try {
-            MessageDigest md = MessageDigest.getInstance(javaAlgo);
+            MessageDigest md = MessageDigest.getInstance(algorithm);
             byte[] digest = md.digest(input.getBytes());
             return HexFormat.of().formatHex(digest);
         } catch (NoSuchAlgorithmException e) {
