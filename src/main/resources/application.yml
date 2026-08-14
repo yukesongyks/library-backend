@@ -1,0 +1,13 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: library-backend
+
+app:
+  name: library-backend
+  version: 1.0.0
+  description: 图书管理系统后端
+  tech-stack: Spring Boot / Java
+  model: DTCoder - 蚂蚁数科研发 AI 编程智能体
