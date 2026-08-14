@@ -35,11 +35,11 @@ def insert_log(api_name: str, caller_name: str, person_type: Optional[str],
                person_level: Optional[str], person_dept: Optional[str],
                call_time: str, response_time_ms: float, status: str = "success"):
     conn = get_connection()
-    conn.execute(
-        "INSERT INTO api_tracking_log (api_name, caller_name, person_type, person_level, person_dept, call_time, response_time_ms, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        (api_name, caller_name, person_type, person_level, person_dept, call_time, response_time_ms, status)
-    )
-    conn.commit()
+    with conn:
+        conn.execute(
+            "INSERT INTO api_tracking_log (api_name, caller_name, person_type, person_level, person_dept, call_time, response_time_ms, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (api_name, caller_name, person_type, person_level, person_dept, call_time, response_time_ms, status)
+        )
     conn.close()
 
 

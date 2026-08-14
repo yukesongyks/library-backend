@@ -88,14 +88,19 @@ def sort_endpoint(req: SortRequest):
 @app.get("/api/export")
 def export_endpoint(
     type: str = Query(...),
-    format: str = Query("json")
+    format: str = Query("json"),
+    input: Optional[str] = Query(None),
+    numbers: Optional[str] = Query(None),
+    order: Optional[str] = Query("asc")
 ):
     if type == "hello":
         data = get_hello().model_dump()
     elif type == "hash":
-        data = compute_hash("demo-input", "SHA-256").model_dump()
+        input_str = input or "demo-input"
+        data = compute_hash(input_str, "SHA-256").model_dump()
     elif type == "sort":
-        data = bubble_sort([3, 1, 4, 1, 5, 9, 2, 6], "asc").model_dump()
+        nums = [int(x) for x in (numbers or "3,1,4,1,5,9,2,6").split(",")]
+        data = bubble_sort(nums, order).model_dump()
     else:
         return ApiResponse(code=400, message=f"Invalid type: {type}")
 
