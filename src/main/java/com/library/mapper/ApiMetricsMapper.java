@@ -7,9 +7,13 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Mapper
 public interface ApiMetricsMapper extends BaseMapper<ApiMetrics> {
+
+    /** 允许的维度列名白名单，防御 SQL 注入 */
+    Set<String> ALLOWED_DIMENSIONS = Set.of("caller_type", "caller_level", "caller_dept");
 
     @Select("<script>"
             + "SELECT ${dimension} AS label, COUNT(*) AS count, "

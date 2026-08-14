@@ -29,5 +29,11 @@ public class BubbleSortService {
         return new BubbleSortResult(sorted, steps);
     }
 
-    public record BubbleSortResult(int[] sorted, int steps) {}
+    public record BubbleSortResult(int[] sorted, int steps) {
+        /** 返回防御性拷贝，避免外部修改内部数组 */
+        @Override
+        public int[] sorted() {
+            return Arrays.copyOf(sorted, sorted.length);
+        }
+    }
 }

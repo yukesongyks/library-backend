@@ -53,6 +53,9 @@ public class ExportService {
 
     private String formatValue(Object value) {
         if (value == null) return "";
+        if (value instanceof int[]) return java.util.Arrays.toString((int[]) value);
+        if (value instanceof long[]) return java.util.Arrays.toString((long[]) value);
+        if (value instanceof double[]) return java.util.Arrays.toString((double[]) value);
         if (value instanceof Object[]) return java.util.Arrays.toString((Object[]) value);
         return value.toString();
     }

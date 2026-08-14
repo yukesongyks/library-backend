@@ -29,7 +29,9 @@ public class MetricsAspect {
         this.apiMetricsMapper = apiMetricsMapper;
     }
 
-    @Around("execution(* com.library.controller.*.*(..))")
+    @Around("execution(* com.library.controller.*.*(..)) "
+            + "&& !execution(* com.library.controller.MetricsController.*(..)) "
+            + "&& !execution(* com.library.controller.ExportController.*(..))")
     public Object recordMetrics(ProceedingJoinPoint joinPoint) throws Throwable {
         long startTime = System.currentTimeMillis();
         boolean success = true;

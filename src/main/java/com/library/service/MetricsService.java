@@ -11,8 +11,8 @@ public class MetricsService {
     private static final Set<String> VALID_DIMENSIONS = Set.of("caller_type", "caller_level", "caller_dept");
     private static final Set<String> VALID_API_PATHS = Set.of(
             "/api/helloworld/helloworld",
-            "/api/hash/compute",
-            "/api/bubblesort/sort",
+            "/api/hash/hash",
+            "/api/bubblesort/bubblesort",
             "/api/export/export"
     );
     private static final Pattern DATE_PATTERN = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}$");

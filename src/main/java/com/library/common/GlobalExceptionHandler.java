@@ -1,5 +1,6 @@
 package com.library.common;
 
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,16 @@ public class GlobalExceptionHandler {
     public Result<Void> handleIllegalArgument(IllegalArgumentException e) {
         log.warn("参数错误: {}", e.getMessage());
         return Result.fail(400, "参数错误: " + e.getMessage());
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Result<Void> handleConstraintViolation(ConstraintViolationException e) {
+        String msg = e.getConstraintViolations().stream()
+                .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                .reduce((a, b) -> a + "; " + b).orElse("校验失败");
+        log.warn("参数校验失败: {}", msg);
+        return Result.fail(400, "参数错误: " + msg);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
