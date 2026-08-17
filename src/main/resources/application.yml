@@ -1,0 +1,12 @@
+server:
+  port: 8080
+
+spring:
+  mvc:
+    cors:
+      mappings:
+        /api/**:
+          allowed-origins: "*"
+          allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+          allowed-headers: "*"
+          allow-credentials: false
