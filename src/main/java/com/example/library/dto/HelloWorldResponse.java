@@ -1,5 +1,8 @@
 package com.example.library.dto;
 
+/**
+ * Response DTO for HelloWorld API containing a greeting message and server timestamp.
+ */
 public class HelloWorldResponse {
 
     private String greeting;

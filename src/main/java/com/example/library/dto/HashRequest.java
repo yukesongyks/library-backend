@@ -2,6 +2,9 @@ package com.example.library.dto;
 
 import javax.validation.constraints.NotBlank;
 
+/**
+ * Request DTO for hash computation API.
+ */
 public class HashRequest {
 
     @NotBlank(message = "Input must not be empty")

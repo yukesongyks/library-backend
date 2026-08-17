@@ -1,5 +1,9 @@
 package com.example.library.service;
 
+/**
+ * Result container for file export operations, holding the file content bytes,
+ * content type, and generated filename.
+ */
 public class ExportResult {
 
     private byte[] content;

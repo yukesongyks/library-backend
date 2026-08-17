@@ -2,6 +2,9 @@ package com.example.library.dto;
 
 import java.util.List;
 
+/**
+ * Represents a single round of the bubble sort process.
+ */
 public class SortStep {
 
     private int round;

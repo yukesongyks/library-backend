@@ -4,6 +4,9 @@ import java.util.List;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
+/**
+ * Request DTO for bubble sort API.
+ */
 public class BubbleSortRequest {
 
     @NotNull(message = "Array must not be empty and length must not exceed 100")

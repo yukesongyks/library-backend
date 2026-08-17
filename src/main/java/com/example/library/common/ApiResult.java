@@ -1,5 +1,10 @@
 package com.example.library.common;
 
+/**
+ * Unified API response wrapper.
+ *
+ * @param <T> the type of the data payload
+ */
 public class ApiResult<T> {
 
     private int code;
@@ -15,10 +20,25 @@ public class ApiResult<T> {
         this.data = data;
     }
 
+    /**
+     * Creates a success response with code 0.
+     *
+     * @param data the response data
+     * @param <T>  the data type
+     * @return ApiResult with code=0, message="success"
+     */
     public static <T> ApiResult<T> ok(T data) {
         return new ApiResult<>(0, "success", data);
     }
 
+    /**
+     * Creates an error response with the given code and message.
+     *
+     * @param code    the error code
+     * @param message the error message
+     * @param <T>     the data type
+     * @return ApiResult with the specified error code and data=null
+     */
     public static <T> ApiResult<T> error(int code, String message) {
         return new ApiResult<>(code, message, null);
     }

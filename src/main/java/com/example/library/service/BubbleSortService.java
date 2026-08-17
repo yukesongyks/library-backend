@@ -7,9 +7,19 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Service for performing bubble sort on integer arrays and recording the sorting process.
+ */
 @Service
 public class BubbleSortService {
 
+    /**
+     * Sorts the given integer list using bubble sort and records each step.
+     *
+     * @param input the list of integers to sort (must not be empty, max 100 elements)
+     * @return BubbleSortResponse containing input, sorted result, steps, comparisons, and swaps
+     * @throws IllegalArgumentException if input is empty or exceeds 100 elements
+     */
     public BubbleSortResponse sort(List<Integer> input) {
         if (input == null || input.isEmpty()) {
             throw new IllegalArgumentException("Array must not be empty and length must not exceed 100");

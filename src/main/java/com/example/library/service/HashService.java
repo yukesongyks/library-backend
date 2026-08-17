@@ -1,15 +1,30 @@
 package com.example.library.service;
 
 import com.example.library.dto.HashResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+/**
+ * Service for computing SHA-256 hash of input strings.
+ */
 @Service
 public class HashService {
 
+    private static final Logger log = LoggerFactory.getLogger(HashService.class);
+
+    /**
+     * Computes the SHA-256 hash of the given input string.
+     *
+     * @param input     the string to hash (must not be blank)
+     * @param algorithm the hash algorithm (must be "SHA-256")
+     * @return HashResponse containing input, algorithm, and hash value
+     * @throws IllegalArgumentException if input is blank or algorithm is unsupported
+     */
     public HashResponse computeHash(String input, String algorithm) {
         if (input == null || input.isBlank()) {
             throw new IllegalArgumentException("Input must not be empty");
@@ -24,6 +39,7 @@ public class HashService {
             String hash = bytesToHex(digest);
             return new HashResponse(input, algorithm, hash);
         } catch (NoSuchAlgorithmException e) {
+            log.error("Unsupported algorithm: {}", algorithm, e);
             throw new IllegalArgumentException("Unsupported algorithm: " + algorithm, e);
         }
     }

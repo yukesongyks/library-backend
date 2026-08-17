@@ -2,6 +2,10 @@ package com.example.library.dto;
 
 import java.util.List;
 
+/**
+ * Response DTO for bubble sort API containing the input, sorted result,
+ * step-by-step process, and comparison/swap statistics.
+ */
 public class BubbleSortResponse {
 
     private List<Integer> input;
@@ -13,7 +17,12 @@ public class BubbleSortResponse {
     public BubbleSortResponse() {
     }
 
-    public BubbleSortResponse(List<Integer> input, List<Integer> sorted, List<SortStep> steps, int comparisons, int swaps) {
+    public BubbleSortResponse(
+            List<Integer> input,
+            List<Integer> sorted,
+            List<SortStep> steps,
+            int comparisons,
+            int swaps) {
         this.input = input;
         this.sorted = sorted;
         this.steps = steps;

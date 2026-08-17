@@ -3,6 +3,9 @@ package com.example.library.dto;
 import java.util.Map;
 import javax.validation.constraints.NotBlank;
 
+/**
+ * Request DTO for export API.
+ */
 public class ExportRequest {
 
     @NotBlank(message = "Type must not be blank")

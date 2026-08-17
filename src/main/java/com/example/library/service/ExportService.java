@@ -1,16 +1,24 @@
 package com.example.library.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Service for exporting algorithm demonstration results as JSON or CSV files.
+ */
 @Service
 public class ExportService {
+
+    private static final Logger log = LoggerFactory.getLogger(ExportService.class);
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
@@ -18,11 +26,22 @@ public class ExportService {
     private static final String JSON_TYPE = "application/json";
     private static final String CSV_TYPE = "text/csv";
 
+    /**
+     * Exports the given data in the specified type and format.
+     *
+     * @param type   export type: "helloworld", "hash", or "bubblesort"
+     * @param data   the data to export
+     * @param format export format: "json" (default) or "csv"
+     * @return ExportResult containing content bytes, content type, and filename
+     * @throws IllegalArgumentException if type or format is invalid
+     */
     public ExportResult export(String type, Map<String, Object> data, String format) {
         if (type == null || type.isBlank()) {
             throw new IllegalArgumentException("Type must not be blank");
         }
-        if (!type.equals("helloworld") && !type.equals("hash") && !type.equals("bubblesort")) {
+        if (!type.equals("helloworld")
+                && !type.equals("hash")
+                && !type.equals("bubblesort")) {
             throw new IllegalArgumentException("Invalid type: " + type + ". Must be one of: helloworld, hash, bubblesort");
         }
         if (format == null || format.isBlank()) {
@@ -34,7 +53,7 @@ public class ExportService {
         }
 
         String ext = format.equals("json") ? "json" : "csv";
-        String timestamp = LocalDateTime.now().format(DATE_FORMAT);
+        String timestamp = LocalDateTime.now(ZoneOffset.UTC).format(DATE_FORMAT);
         String filename = "export-" + type + "-" + timestamp + "." + ext;
 
         try {
@@ -68,6 +87,7 @@ public class ExportService {
                 return new ExportResult(content, CSV_TYPE, filename);
             }
         } catch (Exception e) {
+            log.error("Export failed", e);
             throw new IllegalArgumentException("Export failed: " + e.getMessage(), e);
         }
     }

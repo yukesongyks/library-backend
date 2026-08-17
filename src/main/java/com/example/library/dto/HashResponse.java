@@ -1,5 +1,9 @@
 package com.example.library.dto;
 
+/**
+ * Response DTO for hash computation API containing the original input,
+ * the algorithm used, and the resulting hash value.
+ */
 public class HashResponse {
 
     private String input;
