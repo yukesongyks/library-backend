@@ -39,10 +39,15 @@ public class ExportService {
         if (type == null || type.isBlank()) {
             throw new IllegalArgumentException("Type must not be blank");
         }
+        if (data == null) {
+            throw new IllegalArgumentException("Data must not be empty");
+        }
         if (!type.equals("helloworld")
                 && !type.equals("hash")
                 && !type.equals("bubblesort")) {
-            throw new IllegalArgumentException("Invalid type: " + type + ". Must be one of: helloworld, hash, bubblesort");
+            String msg = "Invalid type: " + type
+                    + ". Must be one of: helloworld, hash, bubblesort";
+            throw new IllegalArgumentException(msg);
         }
         if (format == null || format.isBlank()) {
             format = "json";

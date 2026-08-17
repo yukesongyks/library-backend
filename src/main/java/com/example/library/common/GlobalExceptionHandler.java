@@ -30,6 +30,7 @@ public class GlobalExceptionHandler {
     public ApiResult<Void> handleValidation(MethodArgumentNotValidException ex) {
         FieldError fieldError = ex.getBindingResult().getFieldError();
         String message = fieldError != null ? fieldError.getDefaultMessage() : "Validation failed";
+        log.warn("Validation failed: {}", message, ex);
         return ApiResult.error(400, message);
     }
 
@@ -42,6 +43,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResult<Void> handleIllegalArgument(IllegalArgumentException ex) {
+        log.warn("Illegal argument: {}", ex.getMessage(), ex);
         return ApiResult.error(400, ex.getMessage());
     }
 

@@ -2,6 +2,7 @@ package com.example.library.dto;
 
 import java.util.Map;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 /**
  * Request DTO for export API.
@@ -11,6 +12,7 @@ public class ExportRequest {
     @NotBlank(message = "Type must not be blank")
     private String type;
 
+    @NotNull(message = "Data must not be null")
     private Map<String, Object> data;
 
     private String format = "json";

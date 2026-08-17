@@ -29,7 +29,10 @@ public class HashService {
         if (input == null || input.isBlank()) {
             throw new IllegalArgumentException("Input must not be empty");
         }
-        if (algorithm == null || !algorithm.equals("SHA-256")) {
+        if (algorithm == null) {
+            algorithm = "SHA-256";
+        }
+        if (!algorithm.equals("SHA-256")) {
             throw new IllegalArgumentException("Unsupported algorithm: " + algorithm);
         }
 

@@ -27,6 +27,11 @@ public class BubbleSortService {
         if (input.size() > 100) {
             throw new IllegalArgumentException("Array must not be empty and length must not exceed 100");
         }
+        for (Integer v : input) {
+            if (v == null) {
+                throw new IllegalArgumentException("Array contains null element");
+            }
+        }
 
         List<Integer> arr = new ArrayList<>(input);
         int n = arr.size();

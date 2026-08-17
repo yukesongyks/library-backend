@@ -8,5 +8,5 @@ spring:
         /api/**:
           allowed-origins: "http://localhost:5173"
           allowed-methods: GET,POST,PUT,DELETE,OPTIONS
-          allowed-headers: "*"
+          allowed-headers: "Content-Type,Authorization"
           allow-credentials: false
