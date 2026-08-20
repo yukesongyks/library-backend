@@ -79,4 +79,34 @@ public interface ApiCallLogRepository extends JpaRepository<ApiCallLog, Long> {
 
     @Query("SELECT AVG(a.durationMs) FROM ApiCallLog a")
     Double averageDuration();
+
+    @Query("SELECT COUNT(a) FROM ApiCallLog a " +
+           "WHERE (:apiType = 'all' OR a.apiType = :apiType) " +
+           "AND (:start IS NULL OR a.createdAt >= :start) " +
+           "AND (:end IS NULL OR a.createdAt <= :end)")
+    Long countFiltered(@Param("apiType") String apiType,
+                       @Param("start") LocalDateTime start,
+                       @Param("end") LocalDateTime end);
+
+    @Query("SELECT COUNT(a) FROM ApiCallLog a " +
+           "WHERE a.createdAt >= :todayStart " +
+           "AND (:apiType = 'all' OR a.apiType = :apiType)")
+    Long countTodayFiltered(@Param("todayStart") LocalDateTime todayStart,
+                            @Param("apiType") String apiType);
+
+    @Query("SELECT COUNT(DISTINCT a.userId) FROM ApiCallLog a " +
+           "WHERE (:apiType = 'all' OR a.apiType = :apiType) " +
+           "AND (:start IS NULL OR a.createdAt >= :start) " +
+           "AND (:end IS NULL OR a.createdAt <= :end)")
+    Long countDistinctUsersFiltered(@Param("apiType") String apiType,
+                                    @Param("start") LocalDateTime start,
+                                    @Param("end") LocalDateTime end);
+
+    @Query("SELECT AVG(a.durationMs) FROM ApiCallLog a " +
+           "WHERE (:apiType = 'all' OR a.apiType = :apiType) " +
+           "AND (:start IS NULL OR a.createdAt >= :start) " +
+           "AND (:end IS NULL OR a.createdAt <= :end)")
+    Double averageDurationFiltered(@Param("apiType") String apiType,
+                                   @Param("start") LocalDateTime start,
+                                   @Param("end") LocalDateTime end);
 }

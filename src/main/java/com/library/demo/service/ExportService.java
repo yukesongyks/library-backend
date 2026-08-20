@@ -10,12 +10,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class ExportService {
 
     private static final int MAX_EXPORT_RECORDS = 10000;
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final Set<String> VALID_TYPES = Set.of("helloworld", "hash", "bubble-sort");
 
     private final ApiCallLogRepository repository;
 
@@ -24,6 +26,11 @@ public class ExportService {
     }
 
     public byte[] export(String type, List<Long> recordIds) throws IOException {
+        if (type == null || !VALID_TYPES.contains(type)) {
+            throw new IllegalArgumentException(
+                    "Invalid export type: " + type + ". Supported: helloworld, hash, bubble-sort");
+        }
+
         List<ApiCallLog> records;
         if (recordIds != null && !recordIds.isEmpty()) {
             records = repository.findAllById(recordIds);
@@ -32,7 +39,9 @@ public class ExportService {
         }
 
         if (records.size() > MAX_EXPORT_RECORDS) {
-            records = records.subList(0, MAX_EXPORT_RECORDS);
+            throw new IllegalArgumentException(
+                    "Export exceeds limit: " + records.size() + " records found, maximum is " + MAX_EXPORT_RECORDS
+                    + ". Please narrow the filter criteria. (EXPORT_001)");
         }
 
         try (Workbook workbook = new XSSFWorkbook()) {

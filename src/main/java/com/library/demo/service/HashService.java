@@ -7,12 +7,14 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Set;
 
 @Service
 public class HashService {
 
     private static final Set<String> SUPPORTED = Set.of("MD5", "SHA-1", "SHA-256");
+    private static final ZoneId ZONE_SHANGHAI = ZoneId.of("Asia/Shanghai");
 
     public HashResponse hash(String input, String algorithm) {
         String algo = (algorithm == null || algorithm.isBlank()) ? "SHA-256" : algorithm.toUpperCase();
@@ -23,7 +25,7 @@ public class HashService {
             MessageDigest digest = MessageDigest.getInstance(algo);
             byte[] hashBytes = digest.digest(input.getBytes(StandardCharsets.UTF_8));
             String hashValue = bytesToHex(hashBytes);
-            return new HashResponse(input, algo, hashValue, LocalDateTime.now());
+            return new HashResponse(input, algo, hashValue, LocalDateTime.now(ZONE_SHANGHAI));
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Algorithm not available: " + algo, e);
         }

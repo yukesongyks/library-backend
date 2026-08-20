@@ -9,11 +9,17 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.*;
+import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class AnalyticsService {
+
+    private static final ZoneId ZONE_SHANGHAI = ZoneId.of("Asia/Shanghai");
 
     private final ApiCallLogRepository repository;
 
@@ -26,22 +32,35 @@ public class AnalyticsService {
         String effectiveApiType = (apiType == null || apiType.isBlank()) ? "all" : apiType;
         String effectiveDimension = (dimension == null || dimension.isBlank()) ? "department" : dimension;
 
-        LocalDateTime start = (startDate != null && !startDate.isBlank())
-                ? LocalDate.parse(startDate).atStartOfDay() : null;
-        LocalDateTime end = (endDate != null && !endDate.isBlank())
-                ? LocalDate.parse(endDate).atTime(LocalTime.MAX) : null;
+        LocalDateTime start;
+        LocalDateTime end;
+        try {
+            start = (startDate != null && !startDate.isBlank())
+                    ? LocalDate.parse(startDate).atStartOfDay() : null;
+            end = (endDate != null && !endDate.isBlank())
+                    ? LocalDate.parse(endDate).atTime(LocalTime.MAX) : null;
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException(
+                    "Invalid date format. Expected yyyy-MM-dd, got: "
+                    + (startDate != null ? startDate : endDate) + " (ANALYTICS_001)");
+        }
 
         AnalyticsResponse response = new AnalyticsResponse();
         response.setDimension(effectiveDimension);
         response.setApiType(effectiveApiType);
 
-        // Summary stats
-        response.setTotalCalls(repository.count());
-        Long todayCalls = repository.countToday(LocalDate.now().atStartOfDay());
+        // Summary stats — filtered by apiType and date range
+        Long totalCalls = repository.countFiltered(effectiveApiType, start, end);
+        response.setTotalCalls(totalCalls != null ? totalCalls : 0L);
+
+        LocalDateTime todayStart = LocalDate.now(ZONE_SHANGHAI).atStartOfDay();
+        Long todayCalls = repository.countTodayFiltered(todayStart, effectiveApiType);
         response.setTodayCalls(todayCalls != null ? todayCalls : 0L);
-        Long activeUsers = repository.countDistinctUsers();
+
+        Long activeUsers = repository.countDistinctUsersFiltered(effectiveApiType, start, end);
         response.setActiveUsers(activeUsers != null ? activeUsers : 0L);
-        Double avgDuration = repository.averageDuration();
+
+        Double avgDuration = repository.averageDurationFiltered(effectiveApiType, start, end);
         response.setAvgDurationMs(avgDuration != null ? Math.round(avgDuration * 100.0) / 100.0 : 0.0);
 
         // Group data

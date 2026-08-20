@@ -2,6 +2,7 @@ package com.library.demo.model.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Entity
 @Table(name = "api_call_log")
@@ -44,7 +45,7 @@ public class ApiCallLog {
     @PrePersist
     public void prePersist() {
         if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+            createdAt = LocalDateTime.now(ZoneId.of("Asia/Shanghai"));
         }
     }
 
