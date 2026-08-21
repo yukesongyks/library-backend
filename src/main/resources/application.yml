@@ -1,0 +1,23 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: library-backend
+  datasource:
+    url: jdbc:h2:mem:costdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+  h2:
+    console:
+      enabled: true
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
