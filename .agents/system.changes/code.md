@@ -120,3 +120,97 @@
 3. 前端联调时确认请求/响应格式一致性
 4. 补充单元测试覆盖核心 Service 逻辑
 5. 考虑将 H2 替换为 MySQL/PostgreSQL 用于持久化存储
+
+---
+
+# 编码实现报告（补充）— 冒泡排序模块
+
+> 阶段：编码实现（Coding Implementation）  
+> 日期：2026-11-04  
+> 关联系分：`.agents/system.changes/design.md` §4.3 冒泡排序接口  
+> Skill：`dtazziboot-java-coding-standards`  
+> 状态：✅ 已完成
+
+## 模块进度追踪
+
+| 序号 | 模块 | READ | TEST | IMPL | CHECK | DOCS | 状态 |
+|:----:|------|:----:|:----:|:----:|:-----:|:----:|------|
+| 1 | bubble-sort | ✅ | ✅ | ✅ | ✅ | ✅ | 已完成 |
+
+## READ — 上下文
+
+- 模块职责：接收前端数组，执行升序冒泡排序并回传原始值、排序结果与时间戳。
+- 关键类：`BubbleSortController`（接口层）、`BubbleSortService`（排序算法）、`ApiRequest`（请求 DTO，`array` 为 `List<Integer>`）、`ApiResponse`（统一响应）、`GlobalExceptionHandler`（`IllegalArgumentException` → 400）。
+- 关键发现：`BubbleSortController` 中 `int[] array = request.getArray();` 与 `ApiRequest.array` 的 `List<Integer>` 类型不匹配，工程无法编译；`ApiRequest`/`ExportRequest` 使用 `javax.validation`，与 Spring Boot 3（`jakarta.validation`）不兼容且缺少 `spring-boot-starter-validation` 依赖。
+- 已加载规范：`naming.md`、`comments.md`、`constants.md`、`unit-testing.md`、`datetime.md`。
+
+## TEST — 单元测试
+
+| 文件 | 方法数 | 覆盖场景 |
+|------|:----:|----------|
+| `src/test/java/com/library/backend/service/BubbleSortServiceTest.java` | 8 | 正常路径、负数/重复值、已升序、逆序、单元素、空数组、入参不可变、null 异常 |
+| `src/test/java/com/library/backend/controller/BubbleSortControllerTest.java` | 4 | 正常响应字段、空数组、array 缺失 400、元素为 null 抛参异常 |
+
+JUnit 5 + AssertJ，AAA 三段式；项目此前无测试目录，按镜像路径新建 `src/test/java`。
+
+## IMPL — 实现
+
+| 文件 | 变更 |
+|------|------|
+| `service/BubbleSortService.java` | 保留原地交换 + 无交换提前退出；null 入参抛 `IllegalArgumentException`；入参 `Arrays.copyOf` 保护；补类/方法 Javadoc |
+| `controller/BubbleSortController.java` | `List<Integer>` → `int[]` 转换（`toIntArray`，元素 null 显式报错）；响应按系分补齐 `timestamp`（`Instant`，ISO-8601）；使用 `LinkedHashMap` 固定字段顺序；400 码抽为常量 |
+| `dto/ApiRequest.java` | `javax.validation` → `jakarta.validation`（Boot 3 编译一致性） |
+| `dto/ExportRequest.java` | 同上 |
+| `pom.xml` | 新增 `spring-boot-starter-validation` 依赖 |
+
+响应契约（与系分 §4.3 一致）：
+
+```json
+{"code":200,"message":"success","data":{"original":[5,3,8,1,2],"sorted":[1,2,3,5,8],"timestamp":"2026-11-04T01:47:57.940Z"}}
+```
+
+## CHECK — 规范检查
+
+### L1 静态检查
+
+| 检查项 | 规范要求 | 符合情况 |
+|--------|----------|:--------:|
+| 命名规范 | 类名大驼峰、方法小驼峰、常量全大写 | ✅ |
+| 注释规范 | 类/方法 Javadoc，方法内单行注释 | ✅ |
+| 常量规范 | 消除魔法值（`BAD_REQUEST_CODE`） | ✅ |
+| 异常日志 | `IllegalArgumentException` 由 `GlobalExceptionHandler` 统一处理并 `log.warn` | ✅ |
+| 日期时间 | `Instant` 输出 ISO-8601，未使用 `java.sql.*` | ✅ |
+| 单元测试 | 测试类与被测类同 package，AAA 结构，断言含描述 | ✅ |
+| 安全规范 | 无 SQL 拼接；输入 null/空元素显式校验 | ✅ |
+
+### L2 动态验证
+
+| 验证项 | 状态 | 说明 |
+|--------|:----:|------|
+| 编译验证 | ✅ | 临时 Temurin JDK 17 + Maven 3.9.9 执行 `mvn test`：编译 23 个主源码，`BUILD SUCCESS` |
+| 单测验证 | ✅ | `Tests run: 12, Failures: 0, Errors: 0, Skipped: 0` |
+| 真实接口验证 | ✅ | `mvn spring-boot:run` 后 POST `/api/bubble-sort`：契约示例返回正确；6 组随机数组（含负数、重复、单元素）与 `sorted()` 对照全部一致；元素 null → 400；array 缺失 → 业务码 400；空数组 → 空结果 |
+
+#### 📋 待人工验证
+
+```bash
+mvn compile -DskipTests
+mvn test -Dtest=BubbleSortServiceTest,BubbleSortControllerTest
+```
+
+**发现问题**：修复 3 处既有编译缺陷（Controller 类型不匹配、`javax.validation` 包名、缺失 validation 依赖），无遗留问题。
+
+## DOCS
+
+- 编码报告：已写入 `.agents/system.changes/code.md`（本节）。
+- 架构/模块文档：仓库无 `SSOT.md` 且未指定模块文档路径，按 skill 约定不新建硬编码 `docs/modules/` 目录。
+
+## 变更文件清单
+
+- 修改：`src/main/java/com/library/backend/service/BubbleSortService.java`
+- 修改：`src/main/java/com/library/backend/controller/BubbleSortController.java`
+- 修改：`src/main/java/com/library/backend/dto/ApiRequest.java`
+- 修改：`src/main/java/com/library/backend/dto/ExportRequest.java`
+- 修改：`pom.xml`
+- 新增：`src/test/java/com/library/backend/service/BubbleSortServiceTest.java`
+- 新增：`src/test/java/com/library/backend/controller/BubbleSortControllerTest.java`
